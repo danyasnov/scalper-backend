@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "nodemon": "BOT_TOKEN=577708936:AAFoqLuObt65PotwRz0XftJVFA8jY8DNXoE nodemon index.js",
-    "debug": "BOT_TOKEN=552894798:AAGBHLrv7dwz4BNZP9mZ69taY6iuptmGNi0 node index.js"
+    "nodemon": "nodemon index.js",
+    "debug": "node index.js",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
