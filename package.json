@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "nodemon": "nodemon index.js",
     "debug": "BOT_TOKEN=563765087:AAGHgbG0abJYEJLw5Yj3vJ4Hvfl8Msq1x7U nodemon index.js",
-    "start": "ENV=prod forever start index.js"
+    "start": "ENV=prod node index.js"
   },
   "author": "",
   "license": "ISC",
