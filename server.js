@@ -4,7 +4,7 @@ const {createHash, createHmac} = require('crypto');
 const bodyParser = require('body-parser');
 const path = require('path');
 const {bot, app} = require('./index');
-
+const express = require('express');
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
     .digest();
