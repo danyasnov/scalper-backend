@@ -1,11 +1,9 @@
-const express = require('express');
-const app = express();
 const cors = require('cors');
 const Task = require('./models/task');
 const {createHash, createHmac} = require('crypto');
 const bodyParser = require('body-parser');
 const path = require('path');
-const http = require('http');
+const {bot, app} = require('./index');
 
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
@@ -27,6 +25,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
+
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -82,6 +81,5 @@ app.delete('/task', (req, res) => {
         })
 });
 
-app.listen(3000, () => console.log('App listening on port 3000!'));
 
-module.exports = app;
+// module.exports = app;
