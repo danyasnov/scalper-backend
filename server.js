@@ -5,7 +5,7 @@ const Task = require('./models/task');
 const {createHash, createHmac} = require('crypto');
 const bodyParser = require('body-parser');
 const path = require('path');
-
+const http = require('http');
 
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
@@ -81,6 +81,7 @@ app.delete('/task', (req, res) => {
         })
 });
 
-app.listen(3000, () => console.log('Example app listening on port 3000!'));
+// app.listen(3000, () => console.log('Example app listening on port 3000!'));
+http.createServer(app).listen(3000);
 
 module.exports = app;
