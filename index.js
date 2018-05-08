@@ -13,7 +13,7 @@ const app = express();
 mongoose.connect('mongodb://123123123:123123123@ds241869.mlab.com:41869/bittrex-scalper-bot');
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
+db.once('open', function () {
     console.log('Mongo connected!');
     // startAllTasks();
 });
@@ -54,7 +54,6 @@ if (process.env.ENV === 'development') {
 }
 
 app.listen(3000, () => console.log('App listening on port 3000!'));
-
 
 exports.bot = bot;
 exports.app = app;
