@@ -13,7 +13,7 @@ addTaskTitleScene.on('text', async (ctx) => {
     let text = ctx.message.text;
     let fromId = ctx.message.from.id;
     if (_.filter(markets, m => m.MarketName === text.toUpperCase()).length) {
-        ctx.scene.enter('add-depth-filter');
+        ctx.scene.enter('add-filter-depth');
         ctx.session[fromId] = {
             newTaskTitle: text.toUpperCase()
         }
@@ -22,14 +22,14 @@ addTaskTitleScene.on('text', async (ctx) => {
     }
 });
 
-const addDepthFilterScene = new Scene('add-depth-filter');
-addDepthFilterScene.enter((ctx) => ctx.reply('Enter depth filter in %(1-100)'));
-addDepthFilterScene.on('text', (ctx) => {
+const addFilterDepthScene = new Scene('add-filter-depth');
+addFilterDepthScene.enter((ctx) => ctx.reply('Enter depth filter in %(1-100)'));
+addFilterDepthScene.on('text', (ctx) => {
     let text = ctx.message.text;
     let fromId = ctx.message.from.id;
     if (text.match(/\d+/i) && parseInt(text) > 0 && parseInt(text) < 101) {
         ctx.scene.enter('add-task-range');
-        ctx.session[fromId].newDepthFilter = parseInt(text)
+        ctx.session[fromId].newFilterDepth = parseInt(text)
     } else {
         return ctx.reply('Enter depth filter in %(1-100)')
     }
@@ -44,7 +44,7 @@ addTaskRangeScene.on('text', (ctx) => {
 
         let task = new Task({
             title: ctx.session[fromId].newTaskTitle,
-            depthFilter: ctx.session[fromId].newDepthFilter,
+            filterDepth: ctx.session[fromId].newFilterDepth,
             interval: text,
             active: true,
             userId: fromId
@@ -64,6 +64,6 @@ addTaskRangeScene.leave((ctx) => ctx.reply('Created'));
 
 
 
-const stage = new Stage([addTaskTitleScene, addTaskRangeScene, addDepthFilterScene]);
+const stage = new Stage([addTaskTitleScene, addTaskRangeScene, addFilterDepthScene], {ttl: 60});
 
 module.exports = stage;

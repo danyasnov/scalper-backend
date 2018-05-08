@@ -14,7 +14,7 @@ async function getTaskListMarkup(id, action) {
             .markup((m) => {
                 let btnArray = [];
                 _.each(tasks, (task, i) => {
-                    btnArray = [...btnArray, m.callbackButton(`${task.title} ${task.depthFilter}% ${task.interval}m (active: ${task.active})`, `${action}-task:${task._id}`)]
+                    btnArray = [...btnArray, m.callbackButton(`${task.title} ${task.filterDepth}% ${task.interval}m (active: ${task.active})`, `${action}-task:${task._id}`)]
                 });
                 return m.inlineKeyboard(btnArray, {columns: 1})
             });

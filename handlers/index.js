@@ -33,14 +33,14 @@ composer.hears('💀 Remove', async ctx => {
 });
 
 composer.start((ctx) => {
-    let user = new User(Object.assign(ctx.from, {_id: new mongoose.Types.ObjectId()}));
-    user.save((err, data) => {
-        if (err) return console.log(err);
-        // console.log(data)
-    });
+    let user = new User(Object.assign(ctx.from));
+    user.save((err) => {});
 
     return ctx.reply('✋ Welcome', Extra.markup(
-        Markup.keyboard(['🏠 Task list', '🤖 Create', '💀 Remove'])
+        Markup.keyboard([
+            '🏠 Task list',
+            // '🤖 Create', '💀 Remove'
+        ])
     ))
 });
 

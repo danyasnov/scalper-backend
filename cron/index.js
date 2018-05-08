@@ -66,14 +66,14 @@ function startTask(task) {
                 state.changeSell = ((1 - state.previousSell / state.currentSell) * 100).toFixed(2);
 
 
-                if (Math.abs(state.changeBuy) >= task.depthFilter && state.previousBuy) {
-                    let message = `⚫️ *${task.title}* ⚫️\n\n*BUY* ORDER BOOK CHANGE SIGNAL ➡️ *${state.changeBuy}%*`;
+                if (Math.abs(state.changeBuy) >= task.filterDepth && state.previousBuy) {
+                    let message = `〽️️ *${task.title}*\n➡️ *BUY* order book change *${state.changeBuy}%*\nPrevious value: *${state.previousBuy.toFixed(3)}* BTC\nCurrent value: *${state.currentBuy.toFixed(3)}* BTC`;
                     telegram.sendMessage(task.userId, message, Extra.markdown());
 
                 }
 
-                if (Math.abs(state.changeSell) >= task.depthFilter && state.previousSell) {
-                    let message = `⚫️ *${task.title}* ⚫️\n\n*SELL* ORDER BOOK CHANGE SIGNAL ➡️ *${state.changeSell}%*`;
+                if (Math.abs(state.changeSell) >= task.filterDepth && state.previousSell) {
+                    let message = `〽️️ *${task.title}*\n➡️ *SELL* order book change *${state.changeSell}%*\nPrevious value: *${state.previousSell.toFixed(3)}* BTC\nCurrent value: *${state.currentSell.toFixed(3)}* BTC`;
 
                     telegram.sendMessage(task.userId, message, Extra.markdown());
 

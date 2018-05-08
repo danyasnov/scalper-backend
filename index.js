@@ -7,13 +7,14 @@ const rateLimit = require('telegraf-ratelimit');
 const appRouter = require('./router');
 const {startAllTasks} = require('./cron');
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const app = require('./server');
 
 mongoose.connect('mongodb://123123123:123123123@ds241869.mlab.com:41869/bittrex-scalper-bot');
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
     console.log('mongo connected');
-    startAllTasks();
+    // startAllTasks();
 });
 
 const limitConfig = {
@@ -38,6 +39,7 @@ bot.on('callback_query', appRouter);
 
 bot.startPolling();
 bot.catch(err => console.log(err));
+bot.telegram.setWebhook('')
 
 
 module.exports = bot;
