@@ -44,6 +44,7 @@ bot.catch(err => console.log(err));
 if (process.env.ENV === 'development') {
     bot.telegram.setWebhook('');
     bot.startPolling();
+
     console.log('Start poll')
 
 } else {
