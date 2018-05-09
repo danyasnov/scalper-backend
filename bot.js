@@ -8,6 +8,7 @@ const Extra = require('telegraf/extra');
 const {stopTask, removeTask, switchTask} = require('./cron');
 const Router = require('telegraf/router');
 const mongoose = require('mongoose');
+const Telegraf = require('telegraf');
 
 bot.use(session());
 bot.use((ctx, next) => {
@@ -18,13 +19,16 @@ bot.use((ctx, next) => {
     })
 });
 
+bot.use(Telegraf.log())
+
+
 bot.use(rateLimit({
     onLimitExceeded: (ctx) => ctx.reply('Rate limit exceeded')
 }));
 
-
-
-bot.catch(err => console.log(err));
+bot.catch((err) => {
+    console.log('Ooops', err)
+});
 
 bot.hears('🏠 Task list', async ctx => {
     let markup = await getTaskListMarkup(ctx.from.id, 'switch');
@@ -40,11 +44,11 @@ bot.start((ctx) => {
     user.save((err) => {
     });
 
-    return ctx.reply('✋ Welcome', Extra.markup(
-        Markup.keyboard([
-            '🏠 Task list'
-        ])
-    ))
+    return ctx.reply('✋ Welcome',
+        Markup
+            .keyboard(['🏠 Task list'])
+            .resize()
+            .extra())
 });
 
 
@@ -89,7 +93,7 @@ async function getTaskListMarkup(id, action) {
             .markup((m) => {
                 let btnArray = [];
                 tasks.forEach((task, i) => {
-                    btnArray = [...btnArray, m.callbackButton(`BTC-${task.currency} ${task.filterValue}% ${task.interval}m (active: ${task.active})`, `${action}-task:${task._id}`)]
+                    btnArray = [...btnArray, m.callbackButton(`BTC-${task.currency} ${task.filterValue}${task.filterType === 0 ? '%' : 'BTC'} ${task.interval}m (${task.active ? 'online' : 'stopped'})`, `${action}-task:${task._id}`)]
                 });
                 return m.inlineKeyboard(btnArray, {columns: 1})
             });

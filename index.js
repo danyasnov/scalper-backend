@@ -18,13 +18,10 @@ mongoose.connection.once('open', function () {
 if (process.env.ENV === 'development') {
     bot.telegram.setWebhook('');
     bot.startPolling();
-    console.log('Start poll')
-
 } else {
 
     bot.telegram.setWebhook('https://scalper.xyz/secret-path')
     app.use(bot.webhookCallback('/secret-path'));
-    console.log('Start wh')
 }
 
 app.listen(3000, () => console.log('App listening on port 3000!'));
