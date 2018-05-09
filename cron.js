@@ -1,7 +1,6 @@
 const CronJob = require('cron').CronJob;
-const Task = require('../models/task');
-const _ = require('lodash');
-const {getOrderBook} = require('../utils/api');
+const Task = require('./models/task');
+const {getOrderBook} = require('./api');
 let jobs = {};
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
@@ -10,7 +9,7 @@ const Extra = require('telegraf/extra');
 
 async function startAllTasks() {
     let tasks = await Task.find().populate('user');
-    _.each(tasks, i => {
+    tasks.forEach(i => {
         startTask(i)
     })
 }
@@ -53,11 +52,11 @@ function startTask(task) {
                 state.currentBuy = 0;
 
 
-                _.each(buyOrders, (o) => {
+                buyOrders.forEach((o) => {
                     state.currentBuy += o.Quantity * o.Rate;
                 });
 
-                _.each(sellOrders, (o) => {
+                sellOrders.forEach((o) => {
                     state.currentSell += o.Quantity * o.Rate;
                 });
 

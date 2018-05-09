@@ -3,22 +3,12 @@ const Task = require('./models/task');
 const {createHash, createHmac} = require('crypto');
 const bodyParser = require('body-parser');
 const path = require('path');
-const {bot, app} = require('./index');
+const {app} = require('./index');
 const express = require('express');
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
     .digest();
 
-function checkSignature({hash, ...data}) {
-    const checkString = Object.keys(data)
-        .sort()
-        .map(k => (`${k}=${data[k]}`))
-        .join('\n');
-    const hmac = createHmac('sha256', secret)
-        .update(checkString)
-        .digest('hex');
-    return hmac === hash;
-}
 
 app.use(express.static(path.join(__dirname, 'build')));
 
@@ -73,13 +63,19 @@ app.delete('/task', (req, res) => {
     console.log(req.query.id);
     Task.findByIdAndRemove(req.query.id)
         .then(() => {
-            // if (err) {
-            //     console.log(err);
-            //     return res.sendStatus(500)
-            // }
+
             res.sendStatus(200)
         })
 });
 
 
-// module.exports = app;
+function checkSignature({hash, ...data}) {
+    const checkString = Object.keys(data)
+        .sort()
+        .map(k => (`${k}=${data[k]}`))
+        .join('\n');
+    const hmac = createHmac('sha256', secret)
+        .update(checkString)
+        .digest('hex');
+    return hmac === hash;
+}
