@@ -1,11 +1,11 @@
 const rateLimit = require('telegraf-ratelimit');
 const session = require('telegraf/session');
-const {bot} = require('../index');
-const User = require('../models/user');
-const Task = require('../models/task');
+const {bot} = require('./index');
+const User = require('./models/user');
+const Task = require('./models/task');
 const Markup = require('telegraf/markup');
 const Extra = require('telegraf/extra');
-const {stopTask, removeTask, switchTask} = require('../cron');
+const {stopTask, removeTask, switchTask} = require('./cron');
 const Router = require('telegraf/router');
 const mongoose = require('mongoose');
 
@@ -65,7 +65,7 @@ const appRouter = new Router(({callbackQuery}) => {
 appRouter.on('switch-task', async ctx => {
     let task = await Task.findById(new mongoose.Types.ObjectId(ctx.state.id));
     task.active = !task.active;
-    switchTask(task);
+    // switchTask(task);
 
     await task.save();
 

@@ -33,4 +33,4 @@ exports.bot = bot;
 exports.app = app;
 
 require('./server');
-require('./bot/index');
+require('./bot');
