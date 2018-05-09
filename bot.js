@@ -19,7 +19,7 @@ bot.use((ctx, next) => {
     })
 });
 
-bot.use(Telegraf.log())
+// bot.use(Telegraf.log())
 
 
 bot.use(rateLimit({

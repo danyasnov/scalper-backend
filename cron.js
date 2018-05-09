@@ -1,83 +1,107 @@
 const CronJob = require('cron').CronJob;
 const Task = require('./models/task');
 const {getOrderBook} = require('./api');
-let jobs = {};
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 const Extra = require('telegraf/extra');
 
+let jobs = {};
+
 
 async function startAllTasks() {
-    let tasks = await Task.find().populate('user');
+    let tasks = await Task.find({userId: 76207361});
     tasks.forEach(i => {
         startTask(i)
     })
 }
 
 
-module.exports = {
-    startAllTasks,
-    stopTask,
-    startTask,
-    switchTask,
-    removeTask
-};
-
 function startTask(task) {
     let job = jobs[task._id];
-    let state = {
-        currentBuy: 0,
-        currentSell: 0,
-        previousBuy: 0,
-        previousSell: 0,
-        changeBuy: 0,
-        changeSell: 0
-    };
+
+    let buyState = getNewState();
+    let sellState = getNewState();
+
+    function getNewState() {
+        return {
+            current: 0,
+            previous: 0,
+            change: 0,
+            currentData: []
+        }
+    }
 
     if (job) {
         job.start()
     } else {
         const options = {
-            cronTime: `${task.interval} * * * * *`,
+            cronTime: `1 * * * * *`,
             onTick: async function () {
-                let orderBook = await getOrderBook(task.title);
+                const orderBook = await getOrderBook(`BTC-${task.currency}`, 'both');
 
-                let buyOrders = orderBook.buy;
-                let sellOrders = orderBook.sell;
+                const buyOrders = orderBook.buy;
+                const sellOrders = orderBook.sell;
 
-                state.previousSell = state.currentSell;
-                state.previousBuy = state.currentBuy;
+                buyState.previos = buyState.current;
+                sellState.previos = sellState.current;
 
-                state.currentSell = 0;
-                state.currentBuy = 0;
+                buyState.current = 0;
+                sellState.current = 0;
 
 
                 buyOrders.forEach((o) => {
-                    state.currentBuy += o.Quantity * o.Rate;
+                    buyState.current += o.Quantity * o.Rate;
                 });
 
                 sellOrders.forEach((o) => {
-                    state.currentSell += o.Quantity * o.Rate;
+                    sellState.current += o.Quantity * o.Rate;
                 });
 
+                buyState.currentData.push(buyState.current);
+                sellState.currentData.push(sellState.current);
 
-                state.changeBuy = ((1 - state.previousBuy / state.currentBuy) * 100).toFixed(2);
-                state.changeSell = ((1 - state.previousSell / state.currentSell) * 100).toFixed(2);
+                if (buyState.currentData.length === task.interval || sellState.currentData.length === task.interval) {
 
+                    const sumBuy = buyState.currentData.reduce(function (a, b) {
+                        return a + b;
+                    });
+                    const sumSell = sellState.currentData.reduce(function (a, b) {
+                        return a + b;
+                    });
 
-                if (Math.abs(state.changeBuy) >= task.filterDepth && state.previousBuy) {
-                    let message = `〽️️ *${task.title}*\n➡️ *BUY* order book change *${state.changeBuy}%*\nPrevious value: *${state.previousBuy.toFixed(3)}* BTC\nCurrent value: *${state.currentBuy.toFixed(3)}* BTC`;
-                    telegram.sendMessage(task.userId, message, Extra.markdown());
+                    buyState.previos = buyState.current;
+                    sellState.previos = sellState.current;
 
+                    buyState.current = sumBuy / task.interval;
+                    sellState.current = sumSell / task.interval;
+
+                    if (buyState.previos) {
+                        if (task.filterType === 0) {
+                            buyState.change = ((1 - buyState.previos / buyState.current) * 100).toFixed(2);
+                        } else {
+                            buyState.change = (buyState.previos - buyState.current).toFixed(8);
+                        }
+
+                        if (Math.abs(buyState.change) >= task.filterValue) {
+                            if (task.bookType === 0 || task.bookType === 1) {
+                                telegram.sendMessage(task.userId, getSignalMessage('BUY', buyState.change, buyState.previos, buyState.current), Extra.markdown());
+                            }
+                        }
+                        if (Math.abs(sellState.change) >= task.filterValue) {
+                            if (task.bookType === 0 || task.bookType === 2) {
+                                telegram.sendMessage(task.userId, getSignalMessage('SELL', sellState.change, sellState.previos, sellState.current), Extra.markdown());
+                            }
+                        }
+                    }
+
+                    buyState.currentData = [];
+                    sellState.currentData = [];
                 }
 
-                if (Math.abs(state.changeSell) >= task.filterDepth && state.previousSell) {
-                    let message = `〽️️ *${task.title}*\n➡️ *SELL* order book change *${state.changeSell}%*\nPrevious value: *${state.previousSell.toFixed(3)}* BTC\nCurrent value: *${state.currentSell.toFixed(3)}* BTC`;
-
-                    telegram.sendMessage(task.userId, message, Extra.markdown());
+                function getSignalMessage(type, change, prev, cur) {
+                    return `〽️️ *BTC-${task.currency}*\n➡️ *${type}* order book change *${change}${task.filterType === 0 ? '%' : 'BTC'}*\nPrevious value: *${prev.toFixed(8)}* BTC\nCurrent value: *${cur.toFixed(8)}* BTC`;
 
                 }
-
             },
             startNow: !!task.active,
             runOnInit: true
@@ -107,3 +131,11 @@ function switchTask(task) {
 
     }
 }
+
+module.exports = {
+    startAllTasks,
+    stopTask,
+    startTask,
+    switchTask,
+    removeTask
+};
