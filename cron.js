@@ -1,24 +1,23 @@
-const CronJob = require('cron').CronJob;
 const Task = require('./models/task');
 const {getOrderBook} = require('./api');
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 const Extra = require('telegraf/extra');
-const Markup = require('telegraf/markup');
 
 let jobs = {};
 
 
 async function startAllTasks() {
-    let tasks = await Task.find({userId: 76207361});
+    let tasks = await Task.find({active: true});
     tasks.forEach(i => {
-        startTask(i)
-    })
+        startTask(i);
+    });
+
 }
 
 
 function startTask(task) {
-    clearInterval(task._id);
+    stopTask(task);
 
     let buyState = getNewState('buy');
     let sellState = getNewState('sell');
@@ -37,6 +36,7 @@ function startTask(task) {
     jobs[task._id] = setInterval(watchData, 60000);
 
     async function watchData() {
+
         const orderBook = await getOrderBook(`BTC-${task.currency}`, 'both');
         const {buy: buyOrders, sell: sellOrders} = orderBook;
 
@@ -61,6 +61,11 @@ function startTask(task) {
                 return a + b;
             }) / task.interval;
 
+            sellState.previous = sellState.current;
+            sellState.current = sellState.currentData.reduce(function (a, b) {
+                return a + b;
+            }) / task.interval;
+
             buyState.currentData = [];
             sellState.currentData = [];
             counter = 0;
@@ -76,7 +81,7 @@ function startTask(task) {
     }
 
     function getMessage(type, change, prev, cur) {
-        return `〽️️ *BTC-${task.currency} (${type}, interval ${task.interval}, filter ${task.filterValue})*\nOrder book change *${change}* ${task.filterType === 0 ? '%' : 'BTC'}\nPrevious value: *${prev.toFixed(8)}* BTC\nCurrent value: *${cur.toFixed(8)}* BTC`;
+        return `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m ${task.filterValue + getTypeLabel()}*\nOrder book change ${change}${getTypeLabel()}\nPrevious value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
     }
 
     function handleChange(state) {
@@ -96,15 +101,21 @@ function startTask(task) {
             }
         }
     }
+
+    function getTypeLabel() {
+        return task.filterType === 0 ? '%' : 'BTC'
+    }
 }
 
 
 function stopTask(task) {
     clearInterval(jobs[task._id]);
+    delete jobs[task._id];
 }
 
 function switchTask(task) {
-    if (task.active) {
+
+    if (!task.active) {
         stopTask(task)
     } else {
         startTask(task)
@@ -115,4 +126,5 @@ module.exports = {
     startAllTasks,
     stopTask,
     switchTask,
+    startTask
 };

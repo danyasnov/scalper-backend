@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const {app} = require('./index');
 const express = require('express');
+const {startTask, stopTask} = require('./cron');
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
     .digest();
@@ -21,7 +22,6 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use((req, res, next) => {
     const user = JSON.parse(req.query.auth);
-
     if (checkSignature(user)) {
         req.body.user = user;
         next()
@@ -43,7 +43,8 @@ app.post('/task', async (req, res) => {
     if (obj._id) {
         Task.findOneAndUpdate({_id}, obj, {new: true})
             .then((data) => {
-                res.send(data)
+                res.send(data);
+                startTask(data);
             })
     } else {
         const task = new Task(obj);
@@ -52,6 +53,7 @@ app.post('/task', async (req, res) => {
             if (err) {
                 res.sendStatus(500)
             }
+            startTask(data);
             res.send(data)
         });
     }
@@ -60,11 +62,11 @@ app.post('/task', async (req, res) => {
 });
 
 app.delete('/task', (req, res) => {
-    console.log(req.query.id);
-    Task.findByIdAndRemove(req.query.id)
+    const _id = req.query.id;
+    Task.findByIdAndRemove(_id)
         .then(() => {
-
-            res.sendStatus(200)
+            res.sendStatus(200);
+            stopTask({_id})
         })
 });
 

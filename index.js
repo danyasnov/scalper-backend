@@ -18,7 +18,7 @@ if (process.env.ENV === 'development') {
     bot.telegram.setWebhook('');
     bot.startPolling();
 } else {
-    bot.telegram.setWebhook('https://scalper.xyz/secret-path')
+    bot.telegram.setWebhook('https://scalper.xyz/secret-path');
     app.use(bot.webhookCallback('/secret-path'));
 }
 

@@ -5,7 +5,7 @@ const User = require('./models/user');
 const Task = require('./models/task');
 const Markup = require('telegraf/markup');
 const Extra = require('telegraf/extra');
-const {stopTask, removeTask, switchTask} = require('./cron');
+const {switchTask} = require('./cron');
 const Router = require('telegraf/router');
 const mongoose = require('mongoose');
 const Telegraf = require('telegraf');
@@ -64,14 +64,15 @@ const appRouter = new Router(({callbackQuery}) => {
 });
 
 appRouter.on('switch-task', async ctx => {
-    let task = await Task.findById(new mongoose.Types.ObjectId(ctx.state.id));
+    let task = await Task.findById(ctx.state.id);
     task.active = !task.active;
-    // switchTask(task);
 
     await task.save();
 
     let markup = await getTaskListMarkup(ctx.from.id, 'switch');
     ctx.answerCbQuery(`Successful switching`);
+
+    switchTask(task);
     if (markup) {
         return ctx.editMessageText(`Click to switch`, markup)
     } else {
@@ -90,9 +91,20 @@ async function getTaskListMarkup(id, action) {
             .markup((m) => {
                 let btnArray = [];
                 tasks.forEach((task, i) => {
-                    btnArray = [...btnArray, m.callbackButton(`BTC-${task.currency} ${task.filterValue}${task.filterType === 0 ? '%' : 'BTC'} ${task.interval}m (${task.active ? 'online' : 'stopped'})`, `${action}-task:${task._id}`)]
+                    btnArray = [...btnArray, m.callbackButton(`BTC-${task.currency} ${getBookType(task.bookType)} ${task.interval}m ${task.filterValue}${task.filterType === 0 ? '%' : 'BTC'}  (${task.active ? 'online' : 'stopped'})`, `${action}-task:${task._id}`)]
                 });
                 return m.inlineKeyboard(btnArray, {columns: 1})
             });
+    }
+}
+
+function getBookType (type) {
+    switch (type) {
+        case 0:
+            return 'BOTH';
+        case 1:
+            return 'BUY';
+        case 2:
+            return 'SELL';
     }
 }
