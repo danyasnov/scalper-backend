@@ -21,13 +21,15 @@ app.get('/', function (req, res) {
 app.use(bodyParser.json());
 app.use(cors());
 app.use((req, res, next) => {
-    const user = JSON.parse(req.query.auth);
-    if (checkSignature(user)) {
-        req.body.user = user;
-        next()
-    } else {
-        res.sendStatus(401)
+    if (req.query && req.query.auth) {
+        const user = JSON.parse(req.query.auth);
+        if (checkSignature(user)) {
+            req.body.user = user;
+            return next()
+        }
     }
+
+    res.sendStatus(401);
 });
 
 
