@@ -48,7 +48,7 @@ app.post('/task', async (req, res) => {
             })
     } else {
         const task = new Task(obj);
-        console.log(task);
+        // console.log(task);
         task.save((err, data) => {
             if (err) {
                 res.sendStatus(500)

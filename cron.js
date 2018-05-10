@@ -9,14 +9,15 @@ let jobs = {};
 
 async function startAllTasks() {
     let tasks = await Task.find({active: true});
-    tasks.forEach(i => {
-        startTask(i);
+    tasks.forEach((task, index) => {
+        setTimeout(() => startTask(task, index), index * 1000)
     });
 
 }
 
 
-function startTask(task) {
+function startTask(task, index) {
+
     stopTask(task);
 
     let buyState = getNewState('buy');
