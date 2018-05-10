@@ -19,9 +19,6 @@ bot.use((ctx, next) => {
     })
 });
 
-// bot.use(Telegraf.log())
-
-
 bot.use(rateLimit({
     onLimitExceeded: (ctx) => ctx.reply('Rate limit exceeded')
 }));
