@@ -3,12 +3,13 @@ const {getOrderBook} = require('./api');
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 const Extra = require('telegraf/extra');
+const cache = require('memory-cache');
 
 let jobs = {};
 
 
 async function startAllTasks() {
-    let tasks = await Task.find({active: true});
+    let tasks = await Task.find({active: true, userId: 76207361});
     tasks.forEach((task, index) => {
         setTimeout(() => startTask(task, index), index * 1000)
     });
@@ -17,6 +18,7 @@ async function startAllTasks() {
 
 
 function startTask(task, index) {
+    console.log(task.interval);
 
     stopTask(task);
 
@@ -38,7 +40,14 @@ function startTask(task, index) {
 
     async function watchData() {
 
-        const orderBook = await getOrderBook(`BTC-${task.currency}`, 'both');
+        let orderBook = cache.get(`${task.currency}`);
+
+        if (!orderBook) {
+            orderBook = await getOrderBook(`BTC-${task.currency}`, 'both');
+            cache.put(`${task.currency}`, orderBook, 60000)
+        }
+
+
         const {buy: buyOrders, sell: sellOrders} = orderBook;
 
         let sumBuy = 0;
