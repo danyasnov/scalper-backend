@@ -48,7 +48,7 @@ function startTask(task) {
     }
 
 
-    jobs[task._id] = setInterval(watchData, 6000);
+    jobs[task._id] = setInterval(watchData, 60000);
 
     async function watchData() {
 
@@ -70,7 +70,6 @@ function startTask(task) {
         buyState.price = buyOrders[0].Rate;
         sellState.price = sellOrders[0].Rate;
 
-        let sumTest = 0;
 
         buyOrders.forEach((o) => {
             if (Math.abs(((1 - buyState.price / o.Rate) * 100)) <= task.priceRange) {
