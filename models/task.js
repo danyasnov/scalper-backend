@@ -7,7 +7,8 @@ let taskSchema = mongoose.Schema({
     active: Boolean,
     filterValue: Number,
     filterType: Number,
-    bookType: Number
+    bookType: Number,
+    priceRange: Number
 });
 
 

@@ -7,15 +7,28 @@ const cache = require('memory-cache');
 
 let jobs = {};
 
+const admin = 76207361;
 
 async function startAllTasks() {
-    let tasks = await Task.find({active: true});
+    let opt = {
+        active: true
+    };
+
+    if (process.env.ENV === 'development') {
+        Object.assign(opt, {userId: admin})
+        // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
+        //     return self.indexOf(item) === pos;
+        // });
+        // console.log(uniqueArray.length);
+    }
+
+    let tasks = await Task.find(opt);
+
     tasks.forEach((task, index) => {
         setTimeout(() => startTask(task), index * 1000)
     });
-
+    console.log(`Starting ${tasks.length} tasks...`)
 }
-
 
 function startTask(task) {
 
@@ -35,7 +48,7 @@ function startTask(task) {
     }
 
 
-    jobs[task._id] = setInterval(watchData, 60000);
+    jobs[task._id] = setInterval(watchData, 6000);
 
     async function watchData() {
 
@@ -52,12 +65,15 @@ function startTask(task) {
         let sumBuy = 0;
         let sumSell = 0;
 
+        // console.log('initial ', buyOrders[0].Rate, ((1-buyOrders[0].Rate/buyOrders[99].Rate)*100).toFixed(2));
+
         buyOrders.forEach((o) => {
             sumBuy += o.Quantity * o.Rate;
         });
         sellOrders.forEach((o) => {
             sumSell += o.Quantity * o.Rate;
         });
+
 
         buyState.currentData.push(sumBuy);
         sellState.currentData.push(sumSell);

@@ -40,8 +40,8 @@ app.get('/task', async (req, res) => {
 });
 
 app.post('/task', async (req, res) => {
-    let {currency, interval, filterType, filterValue, active, bookType, _id} = req.body;
-    const obj = {currency, interval, filterType, filterValue, active, bookType, userId: req.body.user.id, _id};
+    let {currency, interval, filterType, filterValue, active, bookType, _id, priceRange} = req.body;
+    const obj = {currency, interval, filterType, filterValue, active, bookType, userId: req.body.user.id, _id, priceRange};
     if (obj._id) {
         Task.findOneAndUpdate({_id}, obj, {new: true})
             .then((data) => {
