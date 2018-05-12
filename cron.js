@@ -67,11 +67,26 @@ function startTask(task) {
 
         // console.log('initial ', buyOrders[0].Rate, ((1-buyOrders[0].Rate/buyOrders[99].Rate)*100).toFixed(2));
 
+        buyState.price = buyOrders[0].Rate;
+        sellState.price = sellOrders[0].Rate;
+
+        let sumTest = 0;
+
         buyOrders.forEach((o) => {
-            sumBuy += o.Quantity * o.Rate;
+            if (Math.abs(((1 - buyState.price / o.Rate) * 100)) <= task.priceRange) {
+                sumBuy += o.Quantity * o.Rate;
+            } else {
+                return false;
+            }
         });
+
         sellOrders.forEach((o) => {
-            sumSell += o.Quantity * o.Rate;
+            if (Math.abs(((1 - sellState.price / o.Rate) * 100)) <= task.priceRange) {
+                sumSell += o.Quantity * o.Rate;
+            } else {
+                return false;
+            }
+
         });
 
 
@@ -103,32 +118,36 @@ function startTask(task) {
                 handleChange(sellState);
             }
         }
-    }
 
-    function getMessage(type, change, prev, cur) {
-        return `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m ${task.filterValue + getTypeLabel()}*\nOrder book change ${change}${getTypeLabel()}\nPrevious value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
-    }
-
-    function handleChange(state) {
-        let change;
-        if (task.filterType === 0) {
-            change = ((1 - state.previous / state.current) * 100).toFixed(2);
-        } else if (task.filterType === 1) {
-            change = (state.previous - state.current).toFixed(8);
+        function getMessage(type, change, prev, cur) {
+            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m R${task.priceRange}% F${task.filterValue + getTypeLabel()}*\n`;
+            const prices = `Bid: ${buyState.price}\nAsk: ${sellState.price}\n`;
+            const changeLine = `Change: ${change}${getTypeLabel()}\n`;
+            const values = `Previous value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
+            return `${header}${prices}${changeLine}${values}`;
         }
-        if (Math.abs(change) >= task.filterValue) {
-            if (task.bookType === 0 || (task.bookType === 1 && state.type === 'buy') || (task.bookType === 2 && state.type === 'sell')) {
-                telegram.sendMessage(
-                    task.userId,
-                    getMessage(state.type, change, state.previous, state.current),
-                    Extra.markdown()
-                );
+
+        function handleChange(state) {
+            let change;
+            if (task.filterType === 0) {
+                change = ((1 - state.previous / state.current) * 100).toFixed(2);
+            } else if (task.filterType === 1) {
+                change = (state.previous - state.current).toFixed(8);
+            }
+            if (Math.abs(change) >= task.filterValue) {
+                if (task.bookType === 0 || (task.bookType === 1 && state.type === 'buy') || (task.bookType === 2 && state.type === 'sell')) {
+                    telegram.sendMessage(
+                        task.userId,
+                        getMessage(state.type, change, state.previous, state.current, state.price),
+                        Extra.markdown()
+                    );
+                }
             }
         }
-    }
 
-    function getTypeLabel() {
-        return task.filterType === 0 ? '%' : 'BTC'
+        function getTypeLabel() {
+            return task.filterType === 0 ? '%' : 'BTC'
+        }
     }
 }
 
