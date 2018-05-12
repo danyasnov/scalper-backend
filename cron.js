@@ -70,7 +70,6 @@ function startTask(task) {
         buyState.price = buyOrders[0].Rate;
         sellState.price = sellOrders[0].Rate;
 
-
         buyOrders.forEach((o) => {
             if (Math.abs(((1 - buyState.price / o.Rate) * 100)) <= task.priceRange) {
                 sumBuy += o.Quantity * o.Rate;
