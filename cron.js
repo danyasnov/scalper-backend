@@ -9,16 +9,15 @@ let jobs = {};
 
 
 async function startAllTasks() {
-    let tasks = await Task.find({active: true, userId: 76207361});
+    let tasks = await Task.find({active: true});
     tasks.forEach((task, index) => {
-        setTimeout(() => startTask(task, index), index * 1000)
+        setTimeout(() => startTask(task), index * 1000)
     });
 
 }
 
 
-function startTask(task, index) {
-    console.log(task.interval);
+function startTask(task) {
 
     stopTask(task);
 
