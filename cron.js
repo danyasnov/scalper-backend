@@ -34,98 +34,69 @@ function startTask(task) {
 
     stopTask(task);
 
-    let buyState = getNewState('buy');
-    let sellState = getNewState('sell');
-    let counter = 0;
 
-    function getNewState(type) {
+    let state = getNewState();
+
+    function getNewState() {
         return {
             previous: 0,
             current: 0,
             currentData: [],
-            type
+            type: getOrderBookType(task.bookType)
         }
     }
 
 
-    jobs[task._id] = setInterval(watchData, 60000);
+    jobs[task._id] = setInterval(watchData, 6000);
 
     async function watchData() {
 
         let orderBook = cache.get(`${task.currency}`);
 
         if (!orderBook) {
-            orderBook = await getOrderBook(`BTC-${task.currency}`, 'both');
-            cache.put(`${task.currency}`, orderBook, 60000)
+            orderBook = await getOrderBook(`BTC-${task.currency}`, state.type);
+            if (!orderBook) return;
+            cache.put(`${task.bookType}-${task.currency}`, orderBook, 60000)
         }
 
 
-        const {buy: buyOrders, sell: sellOrders} = orderBook;
+        let sum = 0;
+        state.price = orderBook[0].Rate;
 
-        let sumBuy = 0;
-        let sumSell = 0;
-
-        // console.log('initial ', buyOrders[0].Rate, ((1-buyOrders[0].Rate/buyOrders[99].Rate)*100).toFixed(2));
-
-        buyState.price = buyOrders[0].Rate;
-        sellState.price = sellOrders[0].Rate;
-
-        buyOrders.forEach((o) => {
-            if (Math.abs(((1 - buyState.price / o.Rate) * 100)) <= task.priceRange) {
-                sumBuy += o.Quantity * o.Rate;
+        orderBook.forEach((o) => {
+            if (Math.abs(((1 - state.price / o.Rate) * 100)) <= task.priceRange) {
+                sum += o.Quantity * o.Rate;
             } else {
                 return false;
             }
         });
 
-        sellOrders.forEach((o) => {
-            if (Math.abs(((1 - sellState.price / o.Rate) * 100)) <= task.priceRange) {
-                sumSell += o.Quantity * o.Rate;
-            } else {
-                return false;
-            }
+        state.currentData.push(sum);
 
-        });
+        if (state.currentData.length === task.interval) {
 
-
-        buyState.currentData.push(sumBuy);
-        sellState.currentData.push(sumSell);
-        counter++;
-
-        if (counter === task.interval) {
-
-            buyState.previous = buyState.current;
-            buyState.current = buyState.currentData.reduce(function (a, b) {
+            state.previous = state.current;
+            state.current = state.currentData.reduce(function (a, b) {
                 return a + b;
             }) / task.interval;
 
-            sellState.previous = sellState.current;
-            sellState.current = sellState.currentData.reduce(function (a, b) {
-                return a + b;
-            }) / task.interval;
+            state.currentData = [];
 
-            buyState.currentData = [];
-            sellState.currentData = [];
-            counter = 0;
-
-            if (buyState.previous) {
-                handleChange(buyState);
+            if (state.previous) {
+                handleChange();
             }
 
-            if (sellState.previous) {
-                handleChange(sellState);
-            }
         }
 
         function getMessage(type, change, prev, cur) {
-            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m R${task.priceRange}% F${task.filterValue + getTypeLabel()}*\n`;
-            const prices = `Bid: ${buyState.price}\nAsk: ${sellState.price}\n`;
-            const changeLine = `Change: ${change}${getTypeLabel()}\n`;
+            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m R${task.priceRange}% F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
+            const prices = `Bid: ${state.price}\nAsk: ${state.price}\n`;
+            const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
             const values = `Previous value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
             return `${header}${prices}${changeLine}${values}`;
         }
 
-        function handleChange(state) {
+        function handleChange() {
             let change;
             if (task.filterType === 0) {
                 change = ((1 - state.previous / state.current) * 100).toFixed(2);
@@ -138,13 +109,31 @@ function startTask(task) {
                         task.userId,
                         getMessage(state.type, change, state.previous, state.current, state.price),
                         Extra.markdown()
-                    );
+                    ).catch(err => console.log(err))
                 }
             }
         }
 
-        function getTypeLabel() {
-            return task.filterType === 0 ? '%' : 'BTC'
+
+    }
+
+    function getTypeLabel(type) {
+        switch (type) {
+            case 0:
+                return '%';
+            case 1:
+                return 'BTC'
+        }
+    }
+
+    function getOrderBookType(type) {
+        switch (type) {
+            case 0:
+                return 'buy';
+            case 1:
+                return 'buy';
+            case 2:
+                return 'sell'
         }
     }
 }
