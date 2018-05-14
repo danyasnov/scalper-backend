@@ -47,7 +47,7 @@ function startTask(task) {
     }
 
 
-    jobs[task._id] = setInterval(watchData, 6000);
+    jobs[task._id] = setInterval(watchData, 60000);
 
     async function watchData() {
 
