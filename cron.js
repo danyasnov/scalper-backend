@@ -61,12 +61,16 @@ function startTask(task) {
 
 
         let sum = 0;
+        let rangePrice;
         state.price = orderBook[0].Rate;
 
-        orderBook.forEach((o) => {
+        orderBook.every((o) => {
             if (Math.abs(((1 - state.price / o.Rate) * 100)) <= task.priceRange) {
                 sum += o.Quantity * o.Rate;
+                return true;
             } else {
+
+                rangePrice = o.Rate;
                 return false;
             }
         });
@@ -89,11 +93,12 @@ function startTask(task) {
         }
 
         function getMessage(type, change, prev, cur) {
-            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m R${task.priceRange}% F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
-            const prices = `Bid: ${state.price}\nAsk: ${state.price}\n`;
+            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
+            const prices = `${task.bookType === 1 ? 'Bid' : 'Ask'}: ${state.price}\n`;
+            const range = `R${task.priceRange}%: ${rangePrice}\n`;
             const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
             const values = `Previous value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
-            return `${header}${prices}${changeLine}${values}`;
+            return `${header}${prices}${rangePrice ? range : ''}${changeLine}${values}`;
         }
 
         function handleChange() {
@@ -136,6 +141,7 @@ function startTask(task) {
                 return 'sell'
         }
     }
+
 }
 
 
