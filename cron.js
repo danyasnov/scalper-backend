@@ -104,7 +104,7 @@ function startTask(task) {
         function handleChange() {
             let change;
             if (task.filterType === 0) {
-                change = ((1 - state.previous / state.current) * 100).toFixed(2);
+                change = ((state.current - state.previous) / state.previous * 100).toFixed(2);
             } else if (task.filterType === 1) {
                 change = (state.previous - state.current).toFixed(8);
             }
