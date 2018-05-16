@@ -8,6 +8,7 @@ const cache = require('memory-cache');
 let jobs = {};
 
 const admin = 76207361;
+let interval = 60000;
 
 async function startAllTasks() {
     let opt = {
@@ -15,7 +16,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin})
+        Object.assign(opt, {userId: admin});
+        interval = 3000;
         // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
         //     return self.indexOf(item) === pos;
         // });
@@ -47,30 +49,33 @@ function startTask(task) {
     }
 
 
-    jobs[task._id] = setInterval(watchData, 60000);
+    jobs[task._id] = setInterval(watchData, interval);
 
     async function watchData() {
+        const cacheId = `${task.exchange}-${task.bookType}-${task.currency}`;
 
-        let orderBook = cache.get(`${task.currency}`);
+        let orderBook = cache.get(cacheId);
 
         if (!orderBook) {
-            orderBook = await getOrderBook(`BTC-${task.currency}`, state.type);
+            orderBook = await getOrderBook(task.exchange, task.currency, state.type);
+
             if (!orderBook) return;
-            cache.put(`${task.bookType}-${task.currency}`, orderBook, 60000)
+            cache.put(cacheId, orderBook, interval)
         }
 
 
         let sum = 0;
         let rangePrice;
-        state.price = orderBook[0].Rate;
+        state.price = orderBook[0][0];
 
         orderBook.every((o) => {
-            if (Math.abs(((1 - state.price / o.Rate) * 100)) <= task.priceRange) {
-                sum += o.Quantity * o.Rate;
+
+            if (Math.abs(((1 - state.price / o[0]) * 100)) <= task.priceRange || task.priceRange === 100) {
+                sum += o[1] * o[0];
                 return true;
             } else {
 
-                rangePrice = o.Rate;
+                rangePrice = o[0];
                 return false;
             }
         });
@@ -93,7 +98,7 @@ function startTask(task) {
         }
 
         function getMessage(type, change, prev, cur) {
-            const header = `〽️️ *BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
+            const header = `〽️️ *${task.exchange.toUpperCase()} BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
             const prices = `${task.bookType === 1 ? 'Bid' : 'Ask'}: ${state.price}\n`;
             const range = `R${task.priceRange}%: ${rangePrice}\n`;
             const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
