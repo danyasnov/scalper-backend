@@ -16,8 +16,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin});
-        interval = 3000;
+        // Object.assign(opt, {userId: admin});
+        // interval = 3000;
         // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
         //     return self.indexOf(item) === pos;
         // });
@@ -27,7 +27,8 @@ async function startAllTasks() {
     let tasks = await Task.find(opt);
 
     tasks.forEach((task, index) => {
-        setTimeout(() => startTask(task), index * 1000)
+        // setTimeout(() => , index * 1000)
+        startTask(task)
     });
     console.log(`Starting ${tasks.length} tasks...`)
 }
@@ -55,13 +56,15 @@ function startTask(task) {
         const cacheId = `${task.exchange}-${task.bookType}-${task.currency}`;
 
         let orderBook = cache.get(cacheId);
-
-        if (!orderBook) {
+        if (orderBook) {
+            // console.log(task.exchange, task.currency, getOrderBookType(task.bookType), 'cached');
+            cache.put(cacheId, null)
+        } else {
             orderBook = await getOrderBook(task.exchange, task.currency, state.type);
-
             if (!orderBook || (orderBook && !orderBook.length)) return;
             cache.put(cacheId, orderBook, interval)
         }
+
 
 
         let sum = 0;
@@ -80,6 +83,7 @@ function startTask(task) {
                 return false;
             }
         });
+        // console.log(sum)
 
         state.currentData.push(sum);
 
