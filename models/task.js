@@ -1,15 +1,39 @@
 const mongoose = require('mongoose');
 
 let taskSchema = mongoose.Schema({
-    currency: String,
-    interval: Number,
-    userId: Number,
+    currency: {
+        type: String,
+        required: true
+    },
+    interval: {
+        type: Number,
+        required: true
+    },
+    userId: {
+        type: Number,
+        required: true
+    },
     active: Boolean,
-    filterValue: Number,
-    filterType: Number,
-    bookType: Number,
-    priceRange: Number,
-    exchange: String
+    filterValue: {
+        type: Number,
+        required: true
+    },
+    filterType: {
+        type: Number,
+        required: true
+    },
+    bookType: {
+        type: Number,
+        required: true
+    },
+    priceRange: {
+        type: Number,
+        required: true
+    },
+    exchange: {
+        type: String,
+        required: true
+    }
 });
 
 

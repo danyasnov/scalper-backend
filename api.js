@@ -24,6 +24,11 @@ async function getOrderBook(exchange, market, type) {
         if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${market}/BTC`, null, {type});
         if (exchange === 'binance') data = await binance.fetchOrderBook(`${market}/BTC`, 1000);
 
+        if (!data) {
+            console.log('invalid task', exchange, market, type);
+            return;
+        }
+
         if (type === 'buy') return data.bids;
         if (type === 'sell') return data.asks
 
