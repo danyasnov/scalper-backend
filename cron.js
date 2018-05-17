@@ -16,7 +16,7 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        // Object.assign(opt, {userId: admin});
+        Object.assign(opt, {userId: admin});
         interval = 3000;
         // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
         //     return self.indexOf(item) === pos;
