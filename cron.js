@@ -16,7 +16,7 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin});
+        // Object.assign(opt, {userId: admin});
         interval = 3000;
         // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
         //     return self.indexOf(item) === pos;
@@ -59,13 +59,14 @@ function startTask(task) {
         if (!orderBook) {
             orderBook = await getOrderBook(task.exchange, task.currency, state.type);
 
-            if (!orderBook) return;
+            if (!orderBook || (orderBook && !orderBook.length)) return;
             cache.put(cacheId, orderBook, interval)
         }
 
 
         let sum = 0;
         let rangePrice;
+
         state.price = orderBook[0][0];
 
         orderBook.every((o) => {

@@ -25,7 +25,7 @@ async function getOrderBook(exchange, market, type) {
         if (exchange === 'binance') data = await binance.fetchOrderBook(`${market}/BTC`, 1000);
 
         if (!data) {
-            console.log('invalid task', exchange, market, type);
+            console.log('invalid data', exchange, market, type);
             return;
         }
 
@@ -37,7 +37,6 @@ async function getOrderBook(exchange, market, type) {
     }
 
 
-
 }
 
 
@@ -46,7 +45,6 @@ async function getMarkets() {
     const json = await response.json();
     return json.result;
 }
-
 
 
 module.exports = {
