@@ -3,12 +3,12 @@ const {getOrderBook} = require('./api');
 const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 const Extra = require('telegraf/extra');
-const cache = require('memory-cache');
+const _ = require('lodash');
 
 let jobs = {};
 
 const admin = 76207361;
-let interval = 60000;
+let timeout = 60000;
 
 async function startAllTasks() {
     let opt = {
@@ -17,14 +17,26 @@ async function startAllTasks() {
 
     if (process.env.ENV === 'development') {
         // Object.assign(opt, {userId: admin});
-        // interval = 3000;
-        // let uniqueArray = tasks.map(t => t.currency).filter(function(item, pos, self) {
-        //     return self.indexOf(item) === pos;
-        // });
-        // console.log(uniqueArray.length);
+        // timeout = 30000;
+
     }
 
     let tasks = await Task.find(opt);
+    tasks = tasks.map(t => {
+        return Object.assign(t, {hash: `${t.currency}-${t.exchange}-${t.bookType}`})
+    });
+    // let uniqTasks = _.unionBy(tasks, 'hash');
+    tasks.forEach((task) => {
+        let conc = tasks.filter(t => task.hash === t.hash);
+        // console.log(conc.length)
+        if (conc.length > 1) {
+            task.twin = true
+        }
+    });
+
+    // tasks = _.filter(tasks, {twin: true});
+    //
+    // console.log(tasks.length);
 
     tasks.forEach((task, index) => {
         // setTimeout(() => , index * 1000)
@@ -33,7 +45,7 @@ async function startAllTasks() {
     console.log(`Starting ${tasks.length} tasks...`)
 }
 
-function startTask(task) {
+async function startTask(task) {
 
     stopTask(task);
 
@@ -45,27 +57,20 @@ function startTask(task) {
             previous: 0,
             current: 0,
             currentData: [],
-            type: getOrderBookType(task.bookType)
+            type: getOrderBookType(task.bookType),
         }
     }
 
 
-    jobs[task._id] = setInterval(watchData, interval);
+    watchData();
+
+    jobs[task._id] = setInterval(watchData, timeout);
 
     async function watchData() {
-        const cacheId = `${task.exchange}-${task.bookType}-${task.currency}`;
+        // console.time(task._id)
+        let orderBook = await getOrderBook(task.exchange, task.currency, state.type, task.twin, task._id);
 
-        let orderBook = cache.get(cacheId);
-        if (orderBook) {
-            // console.log(task.exchange, task.currency, getOrderBookType(task.bookType), 'cached');
-            cache.put(cacheId, null)
-        } else {
-            orderBook = await getOrderBook(task.exchange, task.currency, state.type);
-            if (!orderBook || (orderBook && !orderBook.length)) return;
-            cache.put(cacheId, orderBook, interval)
-        }
-
-
+        if (!orderBook) console.log('BAD VALIDATION');
 
         let sum = 0;
         let rangePrice;

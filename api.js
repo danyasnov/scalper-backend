@@ -2,6 +2,7 @@ const url = 'https://bittrex.com/api/v1.1/public';
 const fetch = require('node-fetch');
 const ccxt = require('ccxt');
 const PromiseThrottle = require('promise-throttle');
+const cache = require('memory-cache');
 
 const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
@@ -24,53 +25,79 @@ const binanceThrottle = new PromiseThrottle({
 //poloniex 10000
 
 
-async function getOrderBook(exchange, market, type) {
+async function getOrderBook(exchange, market, type, isTwin, id) {
 
 
-        let data;
+    let timers = {};
 
-        if (exchange === 'bittrex') {
+    timers[id] = {};
 
-            const promiseFunc = () => {
-                return new Promise(async (resolve, reject) => {
-                    try {
-                        const data = await bittrex.fetchOrderBook(`${market}/BTC`, null, {type});
-                        resolve(data)
-                    } catch (e) {
-                        console.log(e.message)
-                    }
 
-                });
-            };
-            data = await bittrexThrottle.add(promiseFunc);
-        }
-        if (exchange === 'binance') {
+    let data;
+    const cacheId = `${exchange}-${market}-${type}`;
 
-            const promiseFunc = () => {
-                return new Promise(async (resolve, reject) => {
 
-                    try {
-                        const data = await binance.fetchOrderBook(`${market}/BTC`, 1000);
-                        resolve(data)
-                    } catch (e) {
-                        console.log(e.message)
-                    }
-                });
-            };
-            data = await binanceThrottle.add(promiseFunc);
+    const promiseFunc = () => {
+        return new Promise(async (resolve, reject) => {
+            timers[id].begin = Date.now();
+            const cachedData = cache.get(cacheId);
+            // console.log()
 
-        }
+            // console.log(cachedData && cachedData.bids.length);
+            // console.log(cachedData && cachedData.asks.length);
 
-        if (!data) {
-            console.log('invalid data', exchange, market, type);
-            return;
-        }
+            if (cachedData) {
+                // console.log(cacheId,
+                //     'from cache', isTwin ? 'twin' : 'ERROR'
+                // );
 
-        // console.log(exchange, market, type);
+                if (!isTwin) console.log('CACHE ERROR');
 
-        if (type === 'buy') return data.bids;
-        if (type === 'sell') return data.asks
+                resolve(cachedData)
+            } else {
+                let data;
+                try {
+                    if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${market}/BTC`, null, {type});
+                    if (exchange === 'binance') data = await binance.fetchOrderBook(`${market}/BTC`, 1000);
+                } catch (e) {
+                    return console.log(e.message)
+                }
 
+                if (data) {
+                    // console.log(cacheId,
+                    //     'from api'
+                    // );
+                    // console.log(data.bids.length)
+                    // console.log(data.bids.length ? data.bids.length : '');
+                    // console.log(data.asks.length ? data.asks.length : '');
+                    timers[id].end = Date.now();
+                    // console.log(`${(timers[id].end-timers[id].begin)/1000}s`, cacheId)
+
+                    // console.log('cache alive for', 55000-(timers[id].end-timers[id].begin))
+
+                    cache.put(cacheId, data, 55000-(timers[id].end-timers[id].begin));
+                    resolve(data)
+                }
+            }
+
+
+        });
+    };
+    data = await bittrexThrottle.add(promiseFunc);
+
+
+    // if (!data) {
+    //     console.log('invalid data', exchange, market, type);
+    //     return;
+    // }
+
+    // console.log(exchange, market, type);
+    let result;
+
+    if (type === 'buy') result = data.bids.length && data.bids;
+    if (type === 'sell') result = data.asks.length && data.asks;
+
+    return result
 
     // } catch (e) {
     //     console.log(e.message)
