@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const ccxt = require('ccxt');
 const PromiseThrottle = require('promise-throttle');
 const cache = require('memory-cache');
+const {getOrderBookType} = require('./utils');
 
 const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
@@ -10,6 +11,10 @@ const kucoin = new ccxt.kucoin();
 const bitfinex = new ccxt.bitfinex();
 const poloniex = new ccxt.poloniex();
 
+
+let cacheTime = 55000;
+
+if (process.env.ENV === 'development') cacheTime = 25000;
 
 const bittrexThrottle = new PromiseThrottle({
     requestsPerSecond: 2
@@ -25,57 +30,54 @@ const binanceThrottle = new PromiseThrottle({
 //poloniex 10000
 
 
-async function getOrderBook(exchange, market, type, isTwin, id) {
+async function getOrderBook(task) {
+    const {exchange, currency, twin, _id} = task;
 
+    const bookType = getOrderBookType(task.bookType);
 
     let timers = {};
 
-    timers[id] = {};
-
+    timers[_id] = {};
 
     let data;
-    const cacheId = `${exchange}-${market}-${type}`;
-
+    const cacheId = `${exchange}-${currency}-${bookType}`;
+    // console.log(cacheId, process.env.ENV === 'development')
 
     const promiseFunc = () => {
         return new Promise(async (resolve, reject) => {
-            timers[id].begin = Date.now();
+            timers[_id].begin = Date.now();
             const cachedData = cache.get(cacheId);
-            // console.log()
 
-            // console.log(cachedData && cachedData.bids.length);
-            // console.log(cachedData && cachedData.asks.length);
 
             if (cachedData) {
                 // console.log(cacheId,
                 //     'from cache', isTwin ? 'twin' : 'ERROR'
                 // );
 
-                if (!isTwin) console.log('CACHE ERROR');
+                if (!twin) console.log('CACHE ERROR');
 
                 resolve(cachedData)
             } else {
                 let data;
                 try {
-                    if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${market}/BTC`, null, {type});
-                    if (exchange === 'binance') data = await binance.fetchOrderBook(`${market}/BTC`, 1000);
+                    // console.log(exchange, currency, getOrderBookType(bookType))
+                    if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType});
+                    if (exchange === 'binance') data = await binance.fetchOrderBook(`${currency}/BTC`, 1000);
                 } catch (e) {
                     return console.log(e.message)
                 }
+                // console.log(data)
 
                 if (data) {
                     // console.log(cacheId,
                     //     'from api'
                     // );
-                    // console.log(data.bids.length)
-                    // console.log(data.bids.length ? data.bids.length : '');
-                    // console.log(data.asks.length ? data.asks.length : '');
-                    timers[id].end = Date.now();
-                    // console.log(`${(timers[id].end-timers[id].begin)/1000}s`, cacheId)
 
-                    // console.log('cache alive for', 55000-(timers[id].end-timers[id].begin))
+                    timers[_id].end = Date.now();
 
-                    cache.put(cacheId, data, 55000-(timers[id].end-timers[id].begin));
+                    // console.log(55000-(timers[_id].end-timers[_id].begin))
+
+                    cache.put(cacheId, data, cacheTime-(timers[_id].end-timers[_id].begin));
                     resolve(data)
                 }
             }
@@ -85,24 +87,12 @@ async function getOrderBook(exchange, market, type, isTwin, id) {
     };
     data = await bittrexThrottle.add(promiseFunc);
 
-
-    // if (!data) {
-    //     console.log('invalid data', exchange, market, type);
-    //     return;
-    // }
-
-    // console.log(exchange, market, type);
     let result;
 
-    if (type === 'buy') result = data.bids.length && data.bids;
-    if (type === 'sell') result = data.asks.length && data.asks;
+    if (bookType === 'buy') result = data.bids.length && data.bids;
+    if (bookType === 'sell') result = data.asks.length && data.asks;
 
     return result
-
-    // } catch (e) {
-    //     console.log(e.message)
-    // }
-
 
 }
 

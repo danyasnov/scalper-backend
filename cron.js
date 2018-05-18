@@ -4,6 +4,7 @@ const Telegram = require('telegraf/telegram');
 const telegram = new Telegram(process.env.BOT_TOKEN);
 const Extra = require('telegraf/extra');
 const _ = require('lodash');
+const {getOrderBookType} = require('./utils');
 
 let jobs = {};
 
@@ -16,8 +17,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        // Object.assign(opt, {userId: admin});
-        // timeout = 30000;
+        Object.assign(opt, {userId: admin});
+        timeout = 30000;
 
     }
 
@@ -25,10 +26,10 @@ async function startAllTasks() {
     tasks = tasks.map(t => {
         return Object.assign(t, {hash: `${t.currency}-${t.exchange}-${t.bookType}`})
     });
-    // let uniqTasks = _.unionBy(tasks, 'hash');
+
     tasks.forEach((task) => {
         let conc = tasks.filter(t => task.hash === t.hash);
-        // console.log(conc.length)
+
         if (conc.length > 1) {
             task.twin = true
         }
@@ -68,7 +69,7 @@ async function startTask(task) {
 
     async function watchData() {
         // console.time(task._id)
-        let orderBook = await getOrderBook(task.exchange, task.currency, state.type, task.twin, task._id);
+        let orderBook = await getOrderBook(task);
 
         if (!orderBook) console.log('BAD VALIDATION');
 
@@ -79,7 +80,7 @@ async function startTask(task) {
 
         orderBook.every((o) => {
 
-            if (Math.abs(((1 - state.price / o[0]) * 100)) <= task.priceRange || task.priceRange === 100) {
+            if (Math.abs(((1 - state.price / o[0]) * 100)) <= task.priceRange) {
                 sum += o[1] * o[0];
                 return true;
             } else {
@@ -88,7 +89,11 @@ async function startTask(task) {
                 return false;
             }
         });
-        // console.log(sum)
+
+        if (task.priceRange === 100) {
+            rangePrice = orderBook[orderBook.length-1][0]
+        }
+        // console.log(sum, rangePrice);
 
         state.currentData.push(sum);
 
@@ -112,8 +117,8 @@ async function startTask(task) {
             const prices = `${task.bookType === 1 ? 'Bid' : 'Ask'}: ${state.price}\n`;
             const range = `R${task.priceRange}%: ${rangePrice}\n`;
             const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
-            const values = `Previous value: ${prev.toFixed(8)} BTC\nCurrent value: ${cur.toFixed(8)} BTC`;
-            return `${header}${prices}${rangePrice ? range : ''}${changeLine}${values}`;
+            const values = `Previous value: ${prev.toFixed(8)}\nCurrent value: ${cur.toFixed(8)}`;
+            return `${header}${prices}${range}${changeLine}${values}`;
         }
 
         function handleChange() {
@@ -146,16 +151,6 @@ async function startTask(task) {
         }
     }
 
-    function getOrderBookType(type) {
-        switch (type) {
-            case 0:
-                return 'buy';
-            case 1:
-                return 'buy';
-            case 2:
-                return 'sell'
-        }
-    }
 
 }
 
