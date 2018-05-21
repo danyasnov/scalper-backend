@@ -1,4 +1,3 @@
-const cors = require('cors');
 const Task = require('./models/task');
 const {createHash, createHmac} = require('crypto');
 const bodyParser = require('body-parser');
@@ -7,6 +6,8 @@ const {app} = require('./index');
 const express = require('express');
 const {startTask, stopTask} = require('./cron');
 const _ = require('lodash');
+const helmet = require('helmet');
+
 const secret = createHash('sha256')
     .update(process.env.BOT_TOKEN)
     .digest();
@@ -21,7 +22,8 @@ app.get('/', function (req, res) {
 
 
 app.use(bodyParser.json());
-app.use(cors());
+
+app.use(helmet());
 app.use((req, res, next) => {
     if (req.query && req.query.auth) {
         const user = JSON.parse(req.query.auth);

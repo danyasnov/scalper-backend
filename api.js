@@ -11,10 +11,9 @@ const kucoin = new ccxt.kucoin();
 const bitfinex = new ccxt.bitfinex();
 const poloniex = new ccxt.poloniex();
 
-
 let cacheTime = 55000;
 
-if (process.env.ENV === 'development') cacheTime = 25000;
+if (process.env.ENV === 'development') cacheTime = 15000;
 
 const bittrexThrottle = new PromiseThrottle({
     requestsPerSecond: 2
@@ -22,6 +21,10 @@ const bittrexThrottle = new PromiseThrottle({
 
 const binanceThrottle = new PromiseThrottle({
     requestsPerSecond: 2
+});
+
+const bitfinexThrottle = new PromiseThrottle({
+    requestsPerSecond: 1.5
 });
 //bittrex 500, один стакан
 //binance 1000, оба стакана, передавать глубину вторым аргументом
@@ -63,6 +66,8 @@ async function getOrderBook(task) {
                     // console.log(exchange, currency, getOrderBookType(bookType))
                     if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType});
                     if (exchange === 'binance') data = await binance.fetchOrderBook(`${currency}/BTC`, 1000);
+                    // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
+                    if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, {limit_bids: 10000, limit_asks: 10000});
                 } catch (e) {
                     return console.log(e.message)
                 }
@@ -85,7 +90,9 @@ async function getOrderBook(task) {
 
         });
     };
-    data = await bittrexThrottle.add(promiseFunc);
+    if (exchange === 'bittrex') data = await bittrexThrottle.add(promiseFunc);
+    if (exchange === 'binance') data = await binanceThrottle.add(promiseFunc);
+    if (exchange === 'bitfinex') data = await bitfinexThrottle.add(promiseFunc);
 
     let result;
 
@@ -98,13 +105,11 @@ async function getOrderBook(task) {
 
 // setInterval(async function () {
 //     try {
-//         console.log((await binance.fetchOrderBook(`GET/BTC`, 1000)).bids.length, new Date())
+//         console.log((await bitfinex.fetchOrderBook(`ETH/BTC`, null, {limit_bids: 100000, limit_asks: 100000})).bids.length, new Date())
 //     } catch (e) {
-//         // console.log(e.name)
 //         console.log(e.message)
-//         // console.log(e.stack)
 //     }
-// }, 500);
+// }, 1500);
 
 
 async function getMarkets() {

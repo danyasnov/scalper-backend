@@ -91,7 +91,7 @@ async function getTaskListMarkup(id, action) {
             .markup((m) => {
                 let btnArray = [];
                 tasks.forEach((task, i) => {
-                    btnArray = [...btnArray, m.callbackButton(`${task.exchange.toUpperCase()} BTC-${task.currency} ${getBookType(task.bookType)} ${task.interval}m R${task.priceRange}% F${task.filterValue}${task.filterType === 0 ? '%' : 'BTC'} (${task.active ? 'online' : 'stopped'})`, `${action}-task:${task._id}`)]
+                    btnArray = [...btnArray, m.callbackButton(`${task.exchange.toUpperCase()} ${task.currency}-BTC ${getBookType(task.bookType)} ${task.interval}m R${task.priceRange}% F${task.filterValue}${task.filterType === 0 ? '%' : 'BTC'} (${task.active ? 'online' : 'stopped'})`, `${action}-task:${task._id}`)]
                 });
                 return m.inlineKeyboard(btnArray, {columns: 1})
             });

@@ -7,11 +7,10 @@ const app = express();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 //connect to db
-mongoose.connect('mongodb://123123123:123123123@ds241869.mlab.com:41869/bittrex-scalper-bot');
-mongoose.connection.once('open', function () {
-    console.log('Mongo connected!');
-    startAllTasks();
-});
+mongoose.connect('mongodb://123123123:123123123@ds241869.mlab.com:41869/bittrex-scalper-bot').then(() => console.log('Mongo connected!'));
+
+
+startAllTasks();
 
 //start bot
 if (process.env.ENV === 'development') {

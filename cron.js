@@ -18,7 +18,7 @@ async function startAllTasks() {
 
     if (process.env.ENV === 'development') {
         Object.assign(opt, {userId: admin});
-        timeout = 30000;
+        timeout = 20000;
 
     }
 
@@ -38,12 +38,12 @@ async function startAllTasks() {
     // tasks = _.filter(tasks, {twin: true});
     //
     // console.log(tasks.length);
+    console.log(`Starting ${tasks.length} tasks...`);
 
     tasks.forEach((task, index) => {
         // setTimeout(() => , index * 1000)
         startTask(task)
     });
-    console.log(`Starting ${tasks.length} tasks...`)
 }
 
 async function startTask(task) {
@@ -68,7 +68,7 @@ async function startTask(task) {
     jobs[task._id] = setInterval(watchData, timeout);
 
     async function watchData() {
-        // console.time(task._id)
+        // console.log(task._id);
         let orderBook = await getOrderBook(task);
 
         if (!orderBook) console.log('BAD VALIDATION');
@@ -113,7 +113,7 @@ async function startTask(task) {
         }
 
         function getMessage(type, change, prev, cur) {
-            const header = `〽️️ *${task.exchange.toUpperCase()} BTC-${task.currency} ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
+            const header = `〽️️ *${task.exchange.toUpperCase()} ${task.currency}-BTC ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
             const prices = `${task.bookType === 1 ? 'Bid' : 'Ask'}: ${state.price}\n`;
             const range = `R${task.priceRange}%: ${rangePrice}\n`;
             const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
