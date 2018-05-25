@@ -1,3 +1,6 @@
+const {createHmac} = require('crypto');
+
+
 function getOrderBookType(type) {
     switch (type) {
         case 0:
@@ -9,6 +12,18 @@ function getOrderBookType(type) {
     }
 }
 
+function checkSignature({hash, ...data}, secret) {
+    const checkString = Object.keys(data)
+        .sort()
+        .map(k => (`${k}=${data[k]}`))
+        .join('\n');
+    const hmac = createHmac('sha256', secret)
+        .update(checkString)
+        .digest('hex');
+    return hmac === hash;
+}
+
 module.exports = {
-    getOrderBookType
+    getOrderBookType,
+    checkSignature
 };

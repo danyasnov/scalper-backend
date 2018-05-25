@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@cityofzion/neon-js": "^3.7.3",
     "body-parser": "^1.18.2",
     "ccxt": "^1.13.142",
     "cors": "^2.8.4",
