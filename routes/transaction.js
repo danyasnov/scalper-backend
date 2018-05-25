@@ -7,22 +7,6 @@ const secret = createHash('sha256')
     .update('604799175:AAFBWyd6ey8pidiAai8d1exJzYbG1J3j6og')
     .digest();
 
-// const Neon = require('@cityofzion/neon-js');
-// const intent = Neon.api.makeIntent({NEO: 1}, 'ASTVHALyYxZ1Z8uuS3yKjghmwDq8ZA1Kgn');
-// const config = {
-//     net: 'MainNet',
-//     address: 'AJXSALTHkiEngXy6Jwo8qNryKnK44FFvr6',
-//     privateKey: 'L1nUabJfBx2Z59RA6PzLcEydQhe1X4ymTLTAgftNLrtxwNBF9z4T',
-//     intents: intent
-// };
-// Neon.api.sendAsset(config)
-//     .then(config => {
-//         console.log(config.response)
-//     })
-//     .catch(config => {
-//         console.log(config)
-//     })
-
 
 router.use((req, res, next) => {
     if (req.query && req.query.auth) {
