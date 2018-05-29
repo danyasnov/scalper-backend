@@ -9,7 +9,7 @@ const {getOrderBookType} = require('./utils');
 let jobs = {};
 
 const admin = 76207361;
-let timeout = 60000;
+let interval = 60000;
 
 async function startAllTasks() {
     let opt = {
@@ -17,9 +17,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        // Object.assign(opt, {userId: admin});
-        timeout = 20000;
-
+        Object.assign(opt, {userId: admin});
+        interval = 20000;
     }
 
     let tasks = await Task.find(opt);
@@ -36,13 +35,27 @@ async function startAllTasks() {
     });
 
     // tasks = _.filter(tasks, {twin: true});
+
+    const tasksByUsers = {};
+    _.each(tasks, t => {
+        if (tasksByUsers[t.userId]) tasksByUsers[t.userId].push(t);
+        else tasksByUsers[t.userId] = [t]
+    });
+    for (let prop in tasksByUsers) {
+        console.log(prop, tasksByUsers[prop].length)
+    }
+
+    let uniq = _.uniqBy(tasks, (t) => `${t.currency}-${t.exchange}-${t.bookType}`);
+
+    let bittrexUniqTasks = _.filter(uniq, {exchange: 'bittrex'});
+    let binanceUniqTasks = _.filter(uniq, {exchange: 'binance'});
+    console.log(`bittrex tasks, max 60, now ${bittrexUniqTasks.length}`);
+    console.log(`binance tasks, max 50, now ${binanceUniqTasks.length}`);
     //
-    // console.log(tasks.length);
     console.log(`Starting ${tasks.length} tasks...`);
 
-    tasks.forEach((task, index) => {
-        // setTimeout(() => , index * 1000)
-        startTask(task)
+    _.sortBy(tasks, 'exchange').forEach((task, index) => {
+        setTimeout(() => startTask(task), index * 1000)
     });
 }
 
@@ -65,13 +78,13 @@ async function startTask(task) {
 
     watchData();
 
-    jobs[task._id] = setInterval(watchData, timeout);
+    jobs[task._id] = setInterval(watchData, interval);
 
     async function watchData() {
         // console.log(task._id);
         let orderBook = await getOrderBook(task);
 
-        if (!orderBook) console.log('BAD VALIDATION');
+        if (!orderBook) return;
 
         let sum = 0;
         let rangePrice;
@@ -84,19 +97,16 @@ async function startTask(task) {
             // console.log(Math.abs(((1 - state.price / o[0]) * 100)), o[0])
 
             if (Math.abs(((1 - state.price / o[0]) * 100)) <= task.priceRange) {
-
                 sum += o[1] * o[0];
                 return true;
             } else {
-
-
                 rangePrice = o[0];
                 return false;
             }
         });
 
         if (task.priceRange === 100 || !rangePrice) {
-            rangePrice = orderBook[orderBook.length-1][0]
+            rangePrice = orderBook[orderBook.length - 1][0]
         }
         // console.log(sum, rangePrice,);
 
@@ -143,8 +153,6 @@ async function startTask(task) {
                 }
             }
         }
-
-
     }
 
     function getTypeLabel(type) {

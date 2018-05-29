@@ -6,15 +6,26 @@ const {getOrderBookType} = require('./utils');
 // const log = require('ololog')
 // const ansi = require('ansicolor').nice
 // const asTable = require('as-table')
-const bittrex = new ccxt.bittrex({enableRateLimit: true});
+const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance({enableRateLimit: true});
+// console.log(bittrex.rateLimit)
 // const kucoin = new ccxt.kucoin();
 // const bitfinex = new ccxt.bitfinex({enableRateLimit: true});
 // const poloniex = new ccxt.poloniex();
+const Bottleneck = require('bottleneck');
+let cacheTime = 50000;
 
-let cacheTime = 55000;
 
-if (process.env.ENV === 'development') cacheTime = 15000;
+const bittrexLimiter = new Bottleneck({
+    maxConcurrent: 1,
+    minTime: 1000
+});
+const binanceLimiter = new Bottleneck({
+    maxConcurrent: 1,
+    minTime: 1200
+});
+
+if (process.env.ENV === 'development') cacheTime = 10000;
 
 
 //bittrex 500, один стакан
@@ -25,6 +36,7 @@ if (process.env.ENV === 'development') cacheTime = 15000;
 
 
 async function getOrderBook(task) {
+
     const {exchange, currency, twin, _id} = task;
 
     const bookType = getOrderBookType(task.bookType);
@@ -35,17 +47,18 @@ async function getOrderBook(task) {
     //     'https://crossorigin.me/',
     // ];
 
+
     let data;
     const cacheId = `${exchange}-${currency}-${bookType}`;
-    // console.log(cacheId, process.env.ENV === 'development')
-    const begin = Date.now();
+
+    // let begin;
     const cachedData = cache.get(cacheId);
     // let currentProxy = 0
     // let maxRetries   = proxies.length;
 
     if (cachedData) {
         // console.log(cacheId,
-        //     'from cache', isTwin ? 'twin' : 'ERROR'
+        //     'from cache', task.twin ? 'twin' : 'ERROR'
         // );
 
         if (!twin) console.log('CACHE ERROR');
@@ -54,24 +67,31 @@ async function getOrderBook(task) {
     } else {
 
         try {
-            // console.log(exchange, currency, getOrderBookType(bookType))
-            if (exchange === 'bittrex') data = await bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType});
-            if (exchange === 'binance') data = await binance.fetchOrderBook(`${currency}/BTC`, 1000);
+            // console.log(`${currency}/BTC`, null, {type: bookType})
+            if (exchange === 'bittrex') data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+            if (exchange === 'binance') data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000));
             // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
             // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, {
             //     limit_bids: 10000,
             //     limit_asks: 10000
             // });
+            // console.log(cacheId)
+
 
         } catch (e) {
             return console.log(e.message)
         }
 
         if (data) {
-            const end = Date.now();
+            // const end = Date.now();
+            // console.log(cacheId);
 
-            cache.put(cacheId, data, cacheTime - (end - begin));
+            // console.log('cache time ',cacheTime);
+            cache.put(cacheId, data, cacheTime);
             // return data
+        } else {
+            return console.log('no data', data);
+
         }
 
     }
@@ -85,16 +105,17 @@ async function getOrderBook(task) {
 
 }
 
+
 // setInterval(async function () {
 //     try {
-//         console.log((await bitfinex.fetchOrderBook(`EOS/BTC`, null, {
-//             limit_bids: 10000,
-//             limit_asks: 10000
-//         })).bids.length, new Date())
+//         // console.log(bittrex.fetchOrderBook(`LTC/BTC`, null, {type: 'buy'}));
+//
+//         const res = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`LTC/BTC`, null, {type: 'buy'}));
+//         console.log(res.bids.length, new Date())
 //     } catch (e) {
 //         console.log(e.message)
 //     }
-// }, 1000);
+// }, 100);
 //
 // const exchange = new ccxt.bitfinex({enableRateLimit: true});
 // const repeat = 900;

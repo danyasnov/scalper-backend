@@ -16,6 +16,7 @@
     "ansicolor": "^1.1.72",
     "as-table": "^1.0.32",
     "body-parser": "^1.18.2",
+    "bottleneck": "^2.3.1",
     "ccxt": "^1.13.142",
     "cors": "^2.8.4",
     "express": "^4.16.3",
