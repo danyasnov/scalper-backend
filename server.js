@@ -1,4 +1,4 @@
-// const cors = require('cors');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const {app} = require('./index');
@@ -14,7 +14,7 @@ app.get('/', function (req, res) {
 
 
 app.use(bodyParser.json());
-// app.use(cors());
+app.use(cors());
 
 app.use(helmet());
 

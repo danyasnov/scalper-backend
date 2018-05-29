@@ -17,7 +17,7 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin});
+        // Object.assign(opt, {userId: admin});
         timeout = 20000;
 
     }
@@ -78,22 +78,27 @@ async function startTask(task) {
 
         state.price = orderBook[0][0];
 
+        // console.log(orderBook)
         orderBook.every((o) => {
 
+            // console.log(Math.abs(((1 - state.price / o[0]) * 100)), o[0])
+
             if (Math.abs(((1 - state.price / o[0]) * 100)) <= task.priceRange) {
+
                 sum += o[1] * o[0];
                 return true;
             } else {
+
 
                 rangePrice = o[0];
                 return false;
             }
         });
 
-        if (task.priceRange === 100) {
+        if (task.priceRange === 100 || !rangePrice) {
             rangePrice = orderBook[orderBook.length-1][0]
         }
-        // console.log(sum, rangePrice);
+        // console.log(sum, rangePrice,);
 
         state.currentData.push(sum);
 
@@ -113,7 +118,7 @@ async function startTask(task) {
         }
 
         function getMessage(type, change, prev, cur) {
-            const header = `〽️️ *${task.exchange.toUpperCase()} ${task.currency}-BTC ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
+            const header = `〽️️ *${task.exchange.toUpperCase()} ${task.currency}/BTC ${type.toUpperCase()} ${task.interval}m F${task.filterValue + getTypeLabel(task.filterType)}*\n`;
             const prices = `${task.bookType === 1 ? 'Bid' : 'Ask'}: ${state.price}\n`;
             const range = `R${task.priceRange}%: ${rangePrice}\n`;
             const changeLine = `Change: ${change}${getTypeLabel(task.filterType)}\n`;
