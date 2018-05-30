@@ -13,7 +13,7 @@ const binance = new ccxt.binance({enableRateLimit: true});
 // const bitfinex = new ccxt.bitfinex({enableRateLimit: true});
 // const poloniex = new ccxt.poloniex();
 const Bottleneck = require('bottleneck');
-let cacheTime = 45000;
+let cacheTime = 30000;
 
 
 const bittrexLimiter = new Bottleneck({
@@ -25,7 +25,13 @@ const binanceLimiter = new Bottleneck({
     minTime: 1200
 });
 
-if (process.env.ENV === 'development') cacheTime = 10000;
+let proxies = [
+    '',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://crossorigin.me/',
+]
+
+// if (process.env.ENV === 'development') cacheTime = 10000;
 
 
 //bittrex 500, один стакан
@@ -58,17 +64,19 @@ async function getOrderBook(task) {
 
     if (cachedData) {
         // console.log(cacheId,
-        //     'from cache', task.twin ? 'twin' : 'ERROR'
+        //     'from cache', twin ? 'twin' : 'ERROR'
         // );
 
-        if (!twin) console.log('CACHE ERROR');
+        // if (!twin) console.log('CACHE ERROR');
 
         data = cachedData
     } else {
 
         try {
             // console.log(`${currency}/BTC`, null, {type: bookType})
-            if (exchange === 'bittrex') data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+            if (exchange === 'bittrex') {
+                data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+            }
             if (exchange === 'binance') data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000));
             // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
             // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, {
@@ -102,6 +110,10 @@ async function getOrderBook(task) {
     if (bookType === 'sell') result = data.asks.length && data.asks;
 
     return result
+
+}
+
+function proxyRequest() {
 
 }
 

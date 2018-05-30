@@ -17,8 +17,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin});
-        interval = 20000;
+        // Object.assign(opt, {userId: admin});
+        // interval = 20000;
     }
 
     let tasks = await Task.find(opt);
