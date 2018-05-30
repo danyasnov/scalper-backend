@@ -67,7 +67,7 @@ async function getOrderBook(task) {
         //     'from cache', twin ? 'twin' : 'ERROR'
         // );
 
-        // if (!twin) console.log('CACHE ERROR');
+        if (!twin) console.log('CACHE ERROR');
 
         data = cachedData
     } else {
