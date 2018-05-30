@@ -13,7 +13,7 @@ const binance = new ccxt.binance({enableRateLimit: true});
 // const bitfinex = new ccxt.bitfinex({enableRateLimit: true});
 // const poloniex = new ccxt.poloniex();
 const Bottleneck = require('bottleneck');
-let cacheTime = 50000;
+let cacheTime = 45000;
 
 
 const bittrexLimiter = new Bottleneck({
