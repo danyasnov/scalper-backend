@@ -51,11 +51,12 @@ async function startAllTasks() {
     let binanceUniqTasks = _.filter(uniq, {exchange: 'binance'});
     console.log(`bittrex tasks, max 60, now ${bittrexUniqTasks.length}`);
     console.log(`binance tasks, max 50, now ${binanceUniqTasks.length}`);
-    //
+
     console.log(`Starting ${tasks.length} tasks...`);
 
     _.sortBy(tasks, 'exchange').forEach((task, index) => {
-        setTimeout(() => startTask(task), index * 1000)
+        setTimeout(() => startTask(task), index * 100)
+        // startTask(task)
     });
 }
 

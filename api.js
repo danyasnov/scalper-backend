@@ -6,30 +6,32 @@ const {getOrderBookType} = require('./utils');
 // const log = require('ololog')
 // const ansi = require('ansicolor').nice
 // const asTable = require('as-table')
-const bittrex = new ccxt.bittrex();
-const binance = new ccxt.binance({enableRateLimit: true});
 // console.log(bittrex.rateLimit)
 // const kucoin = new ccxt.kucoin();
-// const bitfinex = new ccxt.bitfinex({enableRateLimit: true});
 // const poloniex = new ccxt.poloniex();
+const HttpsProxyAgent = require('https-proxy-agent');
+const cloudscraper = require('cloudscraper');
+const _ = require('lodash');
+const binance = new ccxt.binance();
 const Bottleneck = require('bottleneck');
 let cacheTime = 30000;
 
+let proxies = [''
+    ,'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741'
+];
 
 const bittrexLimiter = new Bottleneck({
-    maxConcurrent: 1,
-    minTime: 1000
+    minTime: 500,
+    // maxConcurrent: 1
 });
 const binanceLimiter = new Bottleneck({
-    maxConcurrent: 1,
-    minTime: 1200
+    minTime: 500,
+    // maxConcurrent: 3
 });
 
-let proxies = [
-    '',
-    'https://cors-anywhere.herokuapp.com/',
-    'https://crossorigin.me/',
-]
+const bittrexProxyIterator = ProxyIterator(proxies);
+const binanceProxyIterator = ProxyIterator(proxies);
+
 
 // if (process.env.ENV === 'development') cacheTime = 10000;
 
@@ -39,7 +41,7 @@ let proxies = [
 //kucoin limit не больше 100
 //bitfinex null, {limit_bids: 10000, limit_asks: 10000
 //poloniex 10000
-
+let counter = 0;
 
 async function getOrderBook(task) {
 
@@ -47,20 +49,11 @@ async function getOrderBook(task) {
 
     const bookType = getOrderBookType(task.bookType);
 
-    // let proxies = [
-    //     '',
-    //     'https://cors-anywhere.herokuapp.com/',
-    //     'https://crossorigin.me/',
-    // ];
-
-
     let data;
     const cacheId = `${exchange}-${currency}-${bookType}`;
 
-    // let begin;
     const cachedData = cache.get(cacheId);
-    // let currentProxy = 0
-    // let maxRetries   = proxies.length;
+
 
     if (cachedData) {
         // console.log(cacheId,
@@ -71,32 +64,38 @@ async function getOrderBook(task) {
 
         data = cachedData
     } else {
-
+        let proxy;
         try {
             // console.log(`${currency}/BTC`, null, {type: bookType})
             if (exchange === 'bittrex') {
-                data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+                const exchange = new ccxt.bittrex();
+                proxy = bittrexProxyIterator.next();
+                if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
+
+                data = await bittrexLimiter.schedule(() => exchange.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
             }
-            if (exchange === 'binance') data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000));
+            if (exchange === 'binance') {
+                const exchange = new ccxt.binance();
+                proxy = binanceProxyIterator.next();
+                if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
+
+                data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000))
+            }
             // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
             // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, {
             //     limit_bids: 10000,
             //     limit_asks: 10000
             // });
-            // console.log(cacheId)
+            // console.log(cacheId, proxy);
 
+            counter++;
 
         } catch (e) {
             return console.log(e.message)
         }
 
         if (data) {
-            // const end = Date.now();
-            // console.log(cacheId);
-
-            // console.log('cache time ',cacheTime);
             cache.put(cacheId, data, cacheTime);
-            // return data
         } else {
             return console.log('no data', data);
 
@@ -110,66 +109,38 @@ async function getOrderBook(task) {
     if (bookType === 'sell') result = data.asks.length && data.asks;
 
     return result
-
 }
-
-function proxyRequest() {
-
-}
-
-
-// setInterval(async function () {
-//     try {
-//         // console.log(bittrex.fetchOrderBook(`LTC/BTC`, null, {type: 'buy'}));
-//
-//         const res = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`LTC/BTC`, null, {type: 'buy'}));
-//         console.log(res.bids.length, new Date())
-//     } catch (e) {
-//         console.log(e.message)
-//     }
-// }, 100);
-//
-// const exchange = new ccxt.bitfinex({enableRateLimit: true});
-// const repeat = 900;
-// let errorsCounter = 0;
-// let counter = 0;
-// exchange.rateLimit += 400; //bitfinex
-// console.log(exchange.rateLimit);
-//
-//
-// async function test(symbol) {
-//     let proxies = [
-//         '',
-//         'https://cors-anywhere.herokuapp.com/',
-//         'https://crossorigin.me/',
-//     ];
-//
-//     for (let i = 0; i < repeat; i++) {
-//         try {
-//             let ticker = await exchange.fetchTicker(symbol);
-//             counter++;
-//             log(exchange.id, exchange.iso8601(exchange.milliseconds()), ticker['datetime'], symbol.green, ticker['last'], counter, errorsCounter)
-//         } catch (e) {
-//             errorsCounter++;
-//             console.log(e.message)
-//         }
-//
-//     }
-// }
-//
-// const concurrent = [
-//     test('ZEC/BTC'),
-//     test('XRP/BTC'),
-//     test('BCH/ETH')
-// ];
-//
-// Promise.all(concurrent);
 
 
 async function getMarkets() {
     const response = await fetch(`${url}/getmarkets`);
     const json = await response.json();
     return json.result
+}
+
+setInterval(() => {
+    console.log('REQUESTS PER MIN', counter);
+    counter = 0;
+}, 60000)
+
+
+function ProxyIterator(array) {
+    let nextIndex = 0;
+    let copy = array.slice();
+
+    return {
+        next: () => {
+            if (nextIndex >= copy.length) nextIndex = 0;
+            return copy[nextIndex++]
+        },
+        // remove: (proxy) => {
+        //     var index = copy.indexOf(proxy);
+        //     if (index > -1) {
+        //         copy.splice(index, 1);
+        //         console.log('spliced array length', copy.length)
+        //     }
+        // }
+    }
 }
 
 
