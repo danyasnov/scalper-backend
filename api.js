@@ -118,10 +118,10 @@ async function getMarkets() {
     return json.result
 }
 
-setInterval(() => {
-    console.log('REQUESTS PER MIN', counter);
-    counter = 0;
-}, 60000)
+// setInterval(() => {
+//     console.log('REQUESTS PER MIN', counter);
+//     counter = 0;
+// }, 60000)
 
 
 function ProxyIterator(array) {
