@@ -10,22 +10,22 @@ const {getOrderBookType} = require('./utils');
 // const kucoin = new ccxt.kucoin();
 // const poloniex = new ccxt.poloniex();
 const HttpsProxyAgent = require('https-proxy-agent');
-const cloudscraper = require('cloudscraper');
-const _ = require('lodash');
-const binance = new ccxt.binance();
+// const _ = require('lodash');
 const Bottleneck = require('bottleneck');
 let cacheTime = 30000;
+const bittrex = new ccxt.bittrex();
+const binance = new ccxt.binance();
 
 let proxies = [''
-    ,'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741'
+    ,'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
 ];
 
 const bittrexLimiter = new Bottleneck({
-    minTime: 500,
+    minTime: 400,
     // maxConcurrent: 1
 });
 const binanceLimiter = new Bottleneck({
-    minTime: 500,
+    minTime: 400,
     // maxConcurrent: 3
 });
 
@@ -68,14 +68,12 @@ async function getOrderBook(task) {
         try {
             // console.log(`${currency}/BTC`, null, {type: bookType})
             if (exchange === 'bittrex') {
-                const exchange = new ccxt.bittrex();
                 proxy = bittrexProxyIterator.next();
                 if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
-                data = await bittrexLimiter.schedule(() => exchange.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+                data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
             }
             if (exchange === 'binance') {
-                const exchange = new ccxt.binance();
                 proxy = binanceProxyIterator.next();
                 if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
@@ -108,6 +106,7 @@ async function getOrderBook(task) {
     if (bookType === 'buy') result = data.bids.length && data.bids;
     if (bookType === 'sell') result = data.asks.length && data.asks;
 
+    // console.log(result.length);
     return result
 }
 
