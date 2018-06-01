@@ -9,7 +9,6 @@ const Bottleneck = require('bottleneck');
 const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
 const poloniex = new ccxt.poloniex();
-const kucoin = new ccxt.kucoin();
 const bitfinex = new ccxt.bitfinex();
 
 let proxies = [''
@@ -70,8 +69,6 @@ async function getOrderBook(task) {
 
             data = await poloniexLimiter.schedule(() => poloniex.fetchOrderBook(`${currency}/BTC`, 1000))
         }
-        // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
-        // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, );
 
         counter++;
 
@@ -91,30 +88,32 @@ async function getOrderBook(task) {
 }
 
 
+const exchange = new ccxt.bitfinex();
+const proxyIterator = ProxyIterator(proxies);
+let testCounter = 0;
 
-// const exchange = new ccxt.poloniex();
-// const proxyIterator = ProxyIterator(proxies);
-// let testCounter = 0;
-//
 // setInterval(async () => {
 //     const proxy = proxyIterator.next();
 //     if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 //
 //     try {
+//         let data = await exchange.fetchOrderBook('LTC/BTC', null,
+//             {limit_asks: 1000, limit_bids: 1000}
+//             );
+//         let sum = 0;
+//         data.bids.forEach(item => {
+//             sum += item[0] * item[1]
+//         });
 //         // console.log((await exchange.fetchOrderBook('LTC/BTC', 1000)).bids.length, proxy) // polo
-//         console.log((await exchange.fetchOrderBook('LTC/BTC', 1000)).bids.length, proxy); // bittrex
+//         console.log(data.bids.length, sum, proxy); // bittrex
+//
+//
 //         testCounter++;
 //     } catch (e) {
 //         console.log(e.message, proxy)
-//         // try {
-//         //     console.log((await exchange.fetchOrderBook('LTC/BTC', null, {type: 'buy'})).bids.length, proxy)
-//         // } catch (e) {
-//         //     console.log(e.message, proxy)
-//         //
-//         //
-//         // }
+//
 //     }
-// }, 300);
+// }, 1000);
 //
 // setInterval(() => {
 //     console.log('REQUESTS PER MIN', counter, testCounter);
