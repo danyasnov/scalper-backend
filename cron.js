@@ -17,8 +17,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        // Object.assign(opt, {userId: admin});
-        // interval = 20000;
+        Object.assign(opt, {userId: admin});
+        interval = 10000;
     }
 
     let tasks = await Task.find(opt);
@@ -26,13 +26,13 @@ async function startAllTasks() {
         return Object.assign(t, {hash: `${t.currency}-${t.exchange}-${t.bookType}`})
     });
 
-    tasks.forEach((task) => {
-        let conc = tasks.filter(t => task.hash === t.hash);
-
-        if (conc.length > 1) {
-            task.twin = true
-        }
-    });
+    // tasks.forEach((task) => {
+    //     let conc = tasks.filter(t => task.hash === t.hash);
+    //
+    //     if (conc.length > 1) {
+    //         task.twin = true
+    //     }
+    // });
 
     // tasks = _.filter(tasks, {twin: true});
 
@@ -45,12 +45,12 @@ async function startAllTasks() {
         console.log(prop, tasksByUsers[prop].length)
     }
 
-    let uniq = _.uniqBy(tasks, (t) => `${t.currency}-${t.exchange}-${t.bookType}`);
-
-    let bittrexUniqTasks = _.filter(uniq, {exchange: 'bittrex'});
-    let binanceUniqTasks = _.filter(uniq, {exchange: 'binance'});
-    console.log(`bittrex tasks, max 60, now ${bittrexUniqTasks.length}`);
-    console.log(`binance tasks, max 50, now ${binanceUniqTasks.length}`);
+    let bittrexTasks = _.filter(tasks, {exchange: 'bittrex'});
+    let binanceTasks = _.filter(tasks, {exchange: 'binance'});
+    let poloniexTasks = _.filter(tasks, {exchange: 'poloniex'});
+    console.log(`bittrex tasks now ${bittrexTasks.length}`);
+    console.log(`binance tasks now ${binanceTasks.length}`);
+    console.log(`poloniex tasks now ${poloniexTasks.length}`);
 
     console.log(`Starting ${tasks.length} tasks...`);
 

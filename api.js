@@ -1,39 +1,38 @@
-const url = 'https://bittrex.com/api/v1.1/public';
 const fetch = require('node-fetch');
 const ccxt = require('ccxt');
-const cache = require('memory-cache');
 const {getOrderBookType} = require('./utils');
-// const log = require('ololog')
-// const ansi = require('ansicolor').nice
-// const asTable = require('as-table')
-// console.log(bittrex.rateLimit)
-// const kucoin = new ccxt.kucoin();
-// const poloniex = new ccxt.poloniex();
+
 const HttpsProxyAgent = require('https-proxy-agent');
 // const _ = require('lodash');
 const Bottleneck = require('bottleneck');
-let cacheTime = 30000;
+
 const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
+const poloniex = new ccxt.poloniex();
+const kucoin = new ccxt.kucoin();
+const bitfinex = new ccxt.bitfinex();
 
 let proxies = [''
-    ,'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
+    , 'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
 ];
 
 const bittrexLimiter = new Bottleneck({
-    minTime: 400,
+    minTime: 300,
     // maxConcurrent: 1
 });
 const binanceLimiter = new Bottleneck({
-    minTime: 400,
+    minTime: 300,
+    // maxConcurrent: 3
+});
+
+const poloniexLimiter = new Bottleneck({
+    minTime: 300,
     // maxConcurrent: 3
 });
 
 const bittrexProxyIterator = ProxyIterator(proxies);
 const binanceProxyIterator = ProxyIterator(proxies);
-
-
-// if (process.env.ENV === 'development') cacheTime = 10000;
+const poloniexProxyIterator = ProxyIterator(proxies);
 
 
 //bittrex 500, один стакан
@@ -50,56 +49,37 @@ async function getOrderBook(task) {
     const bookType = getOrderBookType(task.bookType);
 
     let data;
-    const cacheId = `${exchange}-${currency}-${bookType}`;
 
-    const cachedData = cache.get(cacheId);
+    let proxy;
+    try {
+        if (exchange === 'bittrex') {
+            proxy = bittrexProxyIterator.next();
+            if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
-
-    if (cachedData) {
-        // console.log(cacheId,
-        //     'from cache', twin ? 'twin' : 'ERROR'
-        // );
-
-        if (!twin) console.log('CACHE ERROR');
-
-        data = cachedData
-    } else {
-        let proxy;
-        try {
-            // console.log(`${currency}/BTC`, null, {type: bookType})
-            if (exchange === 'bittrex') {
-                proxy = bittrexProxyIterator.next();
-                if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
-
-                data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
-            }
-            if (exchange === 'binance') {
-                proxy = binanceProxyIterator.next();
-                if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
-
-                data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000))
-            }
-            // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
-            // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, {
-            //     limit_bids: 10000,
-            //     limit_asks: 10000
-            // });
-            // console.log(cacheId, proxy);
-
-            counter++;
-
-        } catch (e) {
-            return console.log(e.message)
+            data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
         }
+        if (exchange === 'binance') {
+            proxy = binanceProxyIterator.next();
+            if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
-        if (data) {
-            cache.put(cacheId, data, cacheTime);
-        } else {
-            return console.log('no data', data);
-
+            data = await binanceLimiter.schedule(() => binance.fetchOrderBook(`${currency}/BTC`, 1000))
         }
+        if (exchange === 'poloniex') {
+            proxy = poloniexProxyIterator.next();
+            if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
+            data = await poloniexLimiter.schedule(() => poloniex.fetchOrderBook(`${currency}/BTC`, 1000))
+        }
+        // if (exchange === 'kucoin') data = await kucoin.fetchOrderBook(`${currency}/BTC`, null, {limit: 1000});
+        // if (exchange === 'bitfinex') data = await bitfinex.fetchOrderBook(`${currency}/BTC`, null, );
+
+        counter++;
+
+    } catch (e) {
+        return console.log(e.message)
     }
+    // console.log(task.hash, proxy);
+    //
 
     let result;
 
@@ -111,16 +91,36 @@ async function getOrderBook(task) {
 }
 
 
-async function getMarkets() {
-    const response = await fetch(`${url}/getmarkets`);
-    const json = await response.json();
-    return json.result
-}
 
+// const exchange = new ccxt.poloniex();
+// const proxyIterator = ProxyIterator(proxies);
+// let testCounter = 0;
+//
+// setInterval(async () => {
+//     const proxy = proxyIterator.next();
+//     if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
+//
+//     try {
+//         // console.log((await exchange.fetchOrderBook('LTC/BTC', 1000)).bids.length, proxy) // polo
+//         console.log((await exchange.fetchOrderBook('LTC/BTC', 1000)).bids.length, proxy); // bittrex
+//         testCounter++;
+//     } catch (e) {
+//         console.log(e.message, proxy)
+//         // try {
+//         //     console.log((await exchange.fetchOrderBook('LTC/BTC', null, {type: 'buy'})).bids.length, proxy)
+//         // } catch (e) {
+//         //     console.log(e.message, proxy)
+//         //
+//         //
+//         // }
+//     }
+// }, 300);
+//
 // setInterval(() => {
-//     console.log('REQUESTS PER MIN', counter);
+//     console.log('REQUESTS PER MIN', counter, testCounter);
 //     counter = 0;
-// }, 60000)
+//     testCounter = 0;
+// }, 60000);
 
 
 function ProxyIterator(array) {
@@ -131,19 +131,11 @@ function ProxyIterator(array) {
         next: () => {
             if (nextIndex >= copy.length) nextIndex = 0;
             return copy[nextIndex++]
-        },
-        // remove: (proxy) => {
-        //     var index = copy.indexOf(proxy);
-        //     if (index > -1) {
-        //         copy.splice(index, 1);
-        //         console.log('spliced array length', copy.length)
-        //     }
-        // }
+        }
     }
 }
 
 
 module.exports = {
-    getMarkets,
     getOrderBook
 };
