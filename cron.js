@@ -17,7 +17,7 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        // Object.assign(opt, {userId: admin});
+        Object.assign(opt, {userId: admin});
         // interval = 10000;
     }
 
