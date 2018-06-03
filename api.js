@@ -73,7 +73,10 @@ async function getOrderBook(task) {
         counter++;
 
     } catch (e) {
-        return console.log(e.message)
+        console.log(e.message, 'creating recursive request');
+
+
+        return getOrderBook(task);
     }
     // console.log(task.hash, proxy);
     //
@@ -83,7 +86,7 @@ async function getOrderBook(task) {
     if (bookType === 'buy') result = data.bids.length && data.bids;
     if (bookType === 'sell') result = data.asks.length && data.asks;
 
-    // console.log(result.length);
+    // console.log(result.length, new Date());
     return result
 }
 

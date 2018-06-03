@@ -18,7 +18,7 @@ async function startAllTasks() {
 
     if (process.env.ENV === 'development') {
         Object.assign(opt, {userId: admin});
-        // interval = 10000;
+        interval = 3000;
     }
 
     let tasks = await Task.find(opt);
@@ -82,8 +82,8 @@ async function startTask(task) {
     jobs[task._id] = setInterval(watchData, interval);
 
     async function watchData() {
-        // console.log(task._id);
         let orderBook = await getOrderBook(task);
+        // console.log(orderBook.length, 'cron', new Date());
 
         if (!orderBook) return;
 
