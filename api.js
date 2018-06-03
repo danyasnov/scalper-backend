@@ -77,7 +77,9 @@ async function getOrderBook(task) {
         if (e instanceof ccxt.RequestTimeout) {
             console.log(task.exchange, task.currency, 'request timeout');
             return getOrderBook(task);
-        } else return;
+        } else {
+            return console.log(e.message)
+        }
 
 
 
