@@ -9,10 +9,9 @@ const Bottleneck = require('bottleneck');
 const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
 const poloniex = new ccxt.poloniex();
-const bitfinex = new ccxt.bitfinex();
 
 let proxies = [''
-    , 'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
+    // , 'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
 ];
 
 const bittrexLimiter = new Bottleneck({
@@ -73,10 +72,15 @@ async function getOrderBook(task) {
         counter++;
 
     } catch (e) {
-        console.log(e.message, 'creating recursive request');
+        // console.log(e.message, 'creating recursive request');
+
+        if (e instanceof ccxt.RequestTimeout) {
+            console.log(task.exchange, task.currency, 'request timeout')ж
+            return getOrderBook(task);
+        } else return;
 
 
-        return getOrderBook(task);
+
     }
     // console.log(task.hash, proxy);
     //
