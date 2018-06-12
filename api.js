@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const ccxt = require('ccxt');
 const {getOrderBookType} = require('./utils');
-
 const HttpsProxyAgent = require('https-proxy-agent');
 // const _ = require('lodash');
 const Bottleneck = require('bottleneck');
@@ -10,6 +9,8 @@ const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
 const poloniex = new ccxt.poloniex();
 
+const cache = require('memory-cache');
+
 let proxies = [
     '',
     'http://MyWk3P:TB4SmC@185.232.169.111:9110',
@@ -17,11 +18,11 @@ let proxies = [
     'http://P3Mo9t:kgJ9d1@185.232.171.98:9363',
     'http://WWJvXz:9jqYoH@185.233.203.31:9703',
     'http://WWJvXz:9jqYoH@185.233.201.138:9398',
-    'http://WWJvXz:9jqYoH@185.233.200.10:9357',
+    'http://WWJvXz:9jqYoH@185.233.200.10:9357'
 ];
 
 const bittrexLimiter = new Bottleneck({
-    minTime: 150,
+    minTime: 200,
     // maxConcurrent: 1
 });
 const binanceLimiter = new Bottleneck({
@@ -44,23 +45,36 @@ const poloniexProxyIterator = ProxyIterator(proxies);
 //kucoin limit не больше 100
 //bitfinex null, {limit_bids: 10000, limit_asks: 10000
 //poloniex 10000
+
 let counter = 0;
+let cacheCounter = 0;
 
 async function getOrderBook(task) {
-
-    const {exchange, currency, twin, _id} = task;
-
-    const bookType = getOrderBookType(task.bookType);
+    const {exchange, currency, bookType} = task;
 
     let data;
 
     let proxy;
+
+    const hash = `${exchange}-${currency}-${bookType}`;
+
+    let cachedData = cache.get(hash);
+
+    if (cachedData) {
+        // console.log(hash, 'from cache');
+        cacheCounter++;
+        return cachedData
+    }
+
+    // console.log(hash);
+
     try {
+
         if (exchange === 'bittrex') {
             proxy = bittrexProxyIterator.next();
             if (proxy) exchange.agent = new HttpsProxyAgent(proxy);
 
-            data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: bookType}));
+            data = await bittrexLimiter.schedule(() => bittrex.fetchOrderBook(`${currency}/BTC`, null, {type: getOrderBookType(bookType)}));
         }
         if (exchange === 'binance') {
             proxy = binanceProxyIterator.next();
@@ -74,7 +88,6 @@ async function getOrderBook(task) {
 
             data = await poloniexLimiter.schedule(() => poloniex.fetchOrderBook(`${currency}/BTC`, 1000))
         }
-
         counter++;
 
     } catch (e) {
@@ -87,25 +100,24 @@ async function getOrderBook(task) {
             return console.log(e.message)
         }
 
-
-
     }
-    // console.log(task.hash, proxy);
-    //
+    // console.log(hash, proxy);
 
     let result;
 
-    if (bookType === 'buy') result = data.bids.length && data.bids;
-    if (bookType === 'sell') result = data.asks.length && data.asks;
+    if (bookType === 1) result = data.bids.length && data.bids;
+    if (bookType === 2) result = data.asks.length && data.asks;
+
+    cache.put(hash, result, 50000);
 
     // console.log(result.length, new Date());
     return result
 }
 
 
-const exchange = new ccxt.bitfinex();
-const proxyIterator = ProxyIterator(proxies);
-let testCounter = 0;
+// const exchange = new ccxt.bitfinex();
+// const proxyIterator = ProxyIterator(proxies);
+// let testCounter = 0;
 
 // setInterval(async () => {
 //     const proxy = proxyIterator.next();
@@ -131,9 +143,9 @@ let testCounter = 0;
 // }, 1000);
 //
 // setInterval(() => {
-//     console.log('REQUESTS PER MIN', counter, testCounter);
+//     console.log('REQUESTS PER MIN', counter, cacheCounter);
 //     counter = 0;
-//     testCounter = 0;
+//     cacheCounter = 0;
 // }, 60000);
 
 

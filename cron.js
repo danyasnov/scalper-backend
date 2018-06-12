@@ -17,8 +17,8 @@ async function startAllTasks() {
     };
 
     if (process.env.ENV === 'development') {
-        Object.assign(opt, {userId: admin});
-        interval = 1000;
+        // Object.assign(opt, {userId: admin});
+        // interval = 1000;
     }
 
     let tasks = await Task.find(opt);
@@ -33,7 +33,7 @@ async function startAllTasks() {
     //         task.twin = true
     //     }
     // });
-
+    //
     // tasks = _.filter(tasks, {twin: true});
 
     const tasksByUsers = {};
@@ -54,7 +54,7 @@ async function startAllTasks() {
 
     console.log(`Starting ${tasks.length} tasks...`);
 
-    _.sortBy(tasks, 'exchange').forEach((task, index) => {
+    tasks.forEach((task, index) => {
         setTimeout(() => startTask(task), index * 100)
         // startTask(task)
     });
