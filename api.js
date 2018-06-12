@@ -10,12 +10,18 @@ const bittrex = new ccxt.bittrex();
 const binance = new ccxt.binance();
 const poloniex = new ccxt.poloniex();
 
-let proxies = [''
-    , 'http://MyWk3P:TB4SmC@185.232.169.111:9110', 'http://6WwC7T:jsw6hZ@185.232.168.169:9741', 'http://P3Mo9t:kgJ9d1@185.232.171.98:9363'
+let proxies = [
+    '',
+    'http://MyWk3P:TB4SmC@185.232.169.111:9110',
+    'http://6WwC7T:jsw6hZ@185.232.168.169:9741',
+    'http://P3Mo9t:kgJ9d1@185.232.171.98:9363',
+    'http://WWJvXz:9jqYoH@185.233.203.31:9703',
+    'http://WWJvXz:9jqYoH@185.233.201.138:9398',
+    'http://WWJvXz:9jqYoH@185.233.200.10:9357',
 ];
 
 const bittrexLimiter = new Bottleneck({
-    minTime: 300,
+    minTime: 150,
     // maxConcurrent: 1
 });
 const binanceLimiter = new Bottleneck({
